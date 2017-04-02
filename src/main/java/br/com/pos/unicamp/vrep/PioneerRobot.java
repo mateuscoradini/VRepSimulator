@@ -30,6 +30,7 @@ public class PioneerRobot {
 
     public PioneerRobot() {
         initializeRobot();
+        initializeCamera();
         initializeSensors();
         initializeActuators();
     }
@@ -44,24 +45,20 @@ public class PioneerRobot {
         leftMotor = new IntW(-1);
         rightMotor = new IntW(-1);
 
-        initMotor(clientID,
-                  "Pioneer_p3dx_leftMotor",
+        initMotor("Pioneer_p3dx_leftMotor",
                   leftMotor);
 
-        // Right motor
-        initMotor(clientID,
-                  "Pioneer_p3dx_rightMotor",
+        initMotor("Pioneer_p3dx_rightMotor",
                   rightMotor);
     }
 
-    private void initMotor(final int clientID,
-                           final String motorId,
+    private void initMotor(final String motorId,
                            final IntW motor) {
-        int resRightMotor = VREP_API.simxGetObjectHandle(clientID,
-                                                         motorId,
-                                                         motor,
-                                                         VREP_API.simx_opmode_oneshot_wait);
-        if (resRightMotor == VREP_API.simx_return_ok) {
+        int response = VREP_API.simxGetObjectHandle(clientID,
+                                                    motorId,
+                                                    motor,
+                                                    VREP_API.simx_opmode_oneshot_wait);
+        if (response == VREP_API.simx_return_ok) {
             System.out.println("Successfully connected to the motor: " + motorId);
         }
     }
@@ -84,6 +81,16 @@ public class PioneerRobot {
                 System.out.println("Successfully connected to the sensor: " + sensorName);
                 proximitySensors.add(handleSensor);
             }
+        }
+    }
+
+    private boolean isPlantDetected() {
+        return false;
+    }
+
+    private void initializeCamera() {
+        while(true) {
+            //
         }
     }
 
@@ -183,7 +190,7 @@ public class PioneerRobot {
         final FloatW w7 = new FloatW(-1.4f);
         final FloatW w8 = new FloatW(-1.6f);
         final FloatW w0 = new FloatW(-0f);
-        
+
         vector.add(w1);
         vector.add(w2);
         vector.add(w3);
