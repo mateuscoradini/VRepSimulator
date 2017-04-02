@@ -36,40 +36,41 @@ public class PioneerP3DXCommands extends VRepObject {
 	public void actuation() throws InterruptedException {
 
 		VREP_API.simxFinish(-1); // just in case, close all opened connections
+
 		int clientID = VREP_API.simxStart(IP, PORT, true, true, 2000, 5);
 
-		// Inicializa o array de sensores de deteccao
+		// Initializing all sensor detection arrays
 		fillDetectSensors();
 		braitenbergL = fillBraitenbergL();
 		braitenbergR = fillBraitenbergR();
 
-		// Inicializando os handlers do motor
+		// Initializing motor handlers
 		leftMotor = new IntW(-1);
 		rightMotor = new IntW(-1);
 
-		// Pegando as informações do VREP
-		// Motor Esquerdo
+		// Getting VREP information
+		// Left motor
 		int resLeftMotor = VREP_API.simxGetObjectHandle(clientID, "Pioneer_p3dx_leftMotor", leftMotor,
 				VREP_API.simx_opmode_oneshot_wait);
 		if (resLeftMotor == VREP_API.simx_return_ok) {
-			System.out.println("Conectado ao sensor: Pioneer_p3dx_leftMotor");
+			System.out.println("Successfully connected to the sensor: Pioneer_p3dx_leftMotor");
 		}
 
-		// Motor Direito
+		// Right motor
 		int resRightMotor = VREP_API.simxGetObjectHandle(clientID, "Pioneer_p3dx_rightMotor", rightMotor,
 				VREP_API.simx_opmode_oneshot_wait);
 		if (resRightMotor == VREP_API.simx_return_ok) {
-			System.out.println("Conectado ao sensor: Pioneer_p3dx_rightMotor");
+			System.out.println("Successfully connected to the sensor: Pioneer_p3dx_rightMotor");
 		}
 
-		// Sensores de aproximação ultrassonicos
+		// Ultrasonic sensors
 		for (int i = 0; i < 16; i++) {
 			String sensorName = "Pioneer_p3dx_ultrasonicSensor" + (i + 1);
 			IntW handleSensor = new IntW(0);
 			int respost = VREP_API.simxGetObjectHandle(clientID, sensorName, handleSensor,
 					VREP_API.simx_opmode_oneshot_wait);
 			if (respost == VREP_API.simx_return_ok) {
-				System.out.println("Conectado ao sensor: " + sensorName);
+				System.out.println("Successfully connected to the sensor: " + sensorName);
 				proximitySensors.add(handleSensor);
 			}
 		}
@@ -113,13 +114,13 @@ public class PioneerP3DXCommands extends VRepObject {
 			VREP_API.simxSetJointTargetVelocity(clientID, leftMotor.getValue(), vLeft, VREP_API.simx_opmode_streaming);
 			VREP_API.simxSetJointTargetVelocity(clientID, rightMotor.getValue(), vRight,
 					VREP_API.simx_opmode_streaming);
-			// espera um pouco antes de reiniciar a leitura dos sensores
-			Thread.sleep(5000);
 
+			// Wait before restarts the sensor reading cycle
+			Thread.sleep(5000);
 		}
 
 		VREP_API.simxFinish(clientID);
-		System.out.println("Conexão fechada");
+		System.out.println("Connection closed.");
 
 	}
 
@@ -237,5 +238,4 @@ public class PioneerP3DXCommands extends VRepObject {
 	public static float getInitialVelocity() {
 		return INITIAL_VELOCITY;
 	}
-
 }
