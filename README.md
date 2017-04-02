@@ -1,17 +1,38 @@
 # VRepSimulator
-Projeto de automação robótica da matéria de inteligencia artificial
+The first project for the [MO810](http://www.ic.unicamp.br/~esther/teaching/2017s1/mc959/index.html) class.
 
+## Summary
+This project implements a robot that searches for plants.
 
-Mateus Coradini Dev (Windows x64) Env:
-Java Version: 1.8.0_121
-V-Rep Pro Edu Version: 3.3.2 (x86)
-Maven Version:
-Git Version: 2.12.1.windows.1
+## Depencencies
+- JDK 1.8
+- Maven 3.X
+- OpenCV 3
+- V-REP 3.3.2
 
+## Setup
+Since the OpenCV does not have a remote Maven repository. You need to install it locally.
 
-Guilherme Carreiro Dev (MAC OS) Env:
+Execute the following command:
+```
+mvn install:install-file -Dfile=<OPENCV_JAR_PATH> -DgroupId=org.opencv -DartifactId=opencv -Dversion=3.2.0 -Dpackaging=jar
+```
+Note: It's important to replace the `<OPENCV_JAR_PATH>` by the `.jar` path, e.g., `/usr/local/opt/opencv3/share/OpenCV/java/opencv-320.jar`.
 
+## Building
+```
+mvn clean install -DargLine="-Djava.library.path=<OPENCV_PATH>"
+```
+Note: It's important to replace the `<OPENCV_PATH>` by the opencv path, e.g., `/usr/local/opt/opencv3/share/OpenCV/java`.
 
+## Running on Intellij
+Go to `Run` > `Edit Configurations...` > `VM Options` and add:
+```
+-Djava.library.path=<OPENCV_PATH>:<VREP_PATH>
+```
+Note: It's important to replace the `<OPENCV_PATH>` and the `<VREP_PATH>` by the correct values, e.g., ` -Djava.library.path=/Users/karreiro/Projects/mo810/vrep/programming/remoteApiBindings/java/lib:/usr/local/opt/opencv3/share/OpenCV/java`
 
-Todos direitos reservado aos fornecedores das API's.
-Esse é somente um projeto de estudo de uso das ferramentas de simulação robotica e inteligência artificial.
+## License
+This project is released under MIT License.
+
+Check [LICENSE](https://github.com/mateuscoradini/VRepSimulator/blob/master/LICENSE.txt) file for more information.
