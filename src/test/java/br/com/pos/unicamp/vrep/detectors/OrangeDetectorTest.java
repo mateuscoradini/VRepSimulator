@@ -6,7 +6,7 @@ import org.opencv.core.Core;
 
 import static org.junit.Assert.*;
 
-public class GreenDetectorTest {
+public class OrangeDetectorTest {
 
     @Before
     public void setup() {
@@ -14,9 +14,9 @@ public class GreenDetectorTest {
     }
 
     @Test
-    public void testIsGreenDetectedWhenTheImageHasSomethingGreen() throws Exception {
-        final String image = resourcePath("green.png");
-        final ColorDetector detector = new GreenDetector(image);
+    public void testIsOrangeDetectedWhenTheImageHasSomethingOrange() throws Exception {
+        final String image = resourcePath("orange.png");
+        final ColorDetector detector = new OrangeDetector(image);
 
         final boolean result = detector.isDetected();
 
@@ -24,9 +24,9 @@ public class GreenDetectorTest {
     }
 
     @Test
-    public void testIsOrangeDetectedWhenTheImageHasSomethingOrange() throws Exception {
-        final String image = resourcePath("orange.png");
-        final ColorDetector detector = new GreenDetector(image);
+    public void testIsOrangeDetectedWhenTheImageHasSomethingGreen() throws Exception {
+        final String image = resourcePath("green.png");
+        final ColorDetector detector = new OrangeDetector(image);
 
         final boolean result = detector.isDetected();
 
@@ -34,9 +34,9 @@ public class GreenDetectorTest {
     }
 
     @Test
-    public void testIsGreenDetectedWhenTheImageDoesNotHaveAnythingGreen() throws Exception {
-        final String image = resourcePath("non-green.png");
-        final ColorDetector detector = new GreenDetector(image);
+    public void testIsOrangeDetectedWhenTheImageDoesNotHaveAnythingOrange() throws Exception {
+        final String image = resourcePath("non-orange.png");
+        final ColorDetector detector = new OrangeDetector(image);
 
         final boolean result = detector.isDetected();
 

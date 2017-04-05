@@ -2,6 +2,7 @@ package br.com.pos.unicamp.vrep;
 
 import java.util.Vector;
 
+import br.com.pos.unicamp.vrep.utils.ImageDetector;
 import coppelia.BoolW;
 import coppelia.FloatW;
 import coppelia.FloatWA;
@@ -27,6 +28,7 @@ public class PioneerRobot {
     private IntW leftMotor;
     private IntW rightMotor;
     private int clientID;
+    private ImageDetector imageDetector;
 
     public PioneerRobot() {
         initializeRobot();
@@ -84,14 +86,27 @@ public class PioneerRobot {
         }
     }
 
+    private void turnCameraOn() {
+        imageDetector.turnOn();
+    }
+
+    private void turnCameraOff() {
+        imageDetector.turnOff();
+    }
+
     private boolean isPlantDetected() {
-        return false;
+        return imageDetector.isPlantDetected();
     }
 
     private void initializeCamera() {
-        while(true) {
-            //
-        }
+        this.imageDetector = new ImageDetector(clientID,
+                                               VREP_API);
+        startThread(imageDetector);
+    }
+
+    private void startThread(final ImageDetector imageDetector) {
+        final Thread imageDetectorThread = new Thread(imageDetector);
+        imageDetectorThread.start();
     }
 
     public void actuation() throws InterruptedException {
