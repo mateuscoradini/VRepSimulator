@@ -22,8 +22,8 @@ public class OrangeDetector extends ColorDetector {
 
     @Override
     public Scalar lowerColor() {
-        return new Scalar(10,
-                          120,
-                          100);
+        return new Scalar(5,
+                          150,
+                          150);
     }
 }

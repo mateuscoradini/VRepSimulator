@@ -50,7 +50,7 @@ public class PioneerRobot {
 
 	public PioneerRobot() {
 		initializeRobot();
-		// initializeCamera();
+		initializeCamera();
 		initializeSensors();
 		initializeActuators();
 	}
@@ -118,8 +118,8 @@ public class PioneerRobot {
 		return imageDetector.isHealthyPlantDetected();
 	}
 
-	private boolean isDebilitatedPlantDetected() {
-		return imageDetector.isDebilitatedPlantDetected();
+	private boolean isWeakPlantDetected() {
+		return imageDetector.isWeakPlantDetected();
 	}
 
 	private void initializeCamera() {
@@ -131,10 +131,6 @@ public class PioneerRobot {
 		final Thread imageDetectorThread = new Thread(imageDetector);
 		imageDetectorThread.start();
 	}
-
-	int healthyPlant = 0;
-
-	int debilitatedPlant = 0;
 	
 	boolean state = true;
 
@@ -145,14 +141,13 @@ public class PioneerRobot {
 			float leftMotorVelocity = INITIAL_VELOCITY;
 			float rightMotorVelocity = INITIAL_VELOCITY;
 
-			//If no has Kinect disable this code
-//			if (isHealthyPlantDetected()) {
-//				System.out.println("Health Plant Detected.");
-//				healthyPlant += 1;
-//			} else if (isDebilitatedPlantDetected()) {
-//				System.out.println("Debilitated Plant Detected.");
-//				debilitatedPlant += 1;
-//			}
+			if (isHealthyPlantDetected()) {
+				System.out.println("Healthy Plant Detected.");
+			}
+
+			if (isWeakPlantDetected()) {
+				System.out.println("Weak Plant Detected.");
+			}
 
 			// Left
 			RequestSensorUltrassonic sensor3 = requestSensorUltrassonicDetectetion(SENSOR_3_NUMBER);

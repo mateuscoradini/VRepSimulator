@@ -30,7 +30,7 @@ public class ImageDetector implements Runnable {
     private IntW kinect;
     private boolean enabled = false;
     private boolean healthyPlantDetected = false;
-    private boolean debilitatedDetected = false;
+    private boolean weakPlantDetected = false;
 
     public ImageDetector(final int clientID,
                          final remoteApi vrepApi) {
@@ -136,18 +136,6 @@ public class ImageDetector implements Runnable {
         enabled = false;
     }
 
-    private boolean healthyPlantDetected(final Mat mat) {
-        final GreenDetector detector = new GreenDetector(mat);
-
-        return detector.isDetected();
-    }
-
-    private boolean debilitatedPlantDetected(final Mat mat) {
-        final OrangeDetector detector = new OrangeDetector(mat);
-
-        return detector.isDetected();
-    }
-
     @Override
     public void run() {
         while (true) {
@@ -157,11 +145,20 @@ public class ImageDetector implements Runnable {
                 if (matOptional.isPresent()) {
                     final Mat mat = matOptional.get();
 
-                    healthyPlantDetected = healthyPlantDetected(mat);
-                    debilitatedDetected = debilitatedPlantDetected(mat);
+                    // TODO - improve this prevalence rule
+                    final GreenDetector greenDetector = new GreenDetector(mat);
+                    final OrangeDetector orangeDetector = new OrangeDetector(mat);
+
+                    if (greenDetector.getDetectionLevel() > orangeDetector.getDetectionLevel()) {
+                        healthyPlantDetected = greenDetector.isDetected();
+                        weakPlantDetected = false;
+                    } else {
+                        healthyPlantDetected = false;
+                        weakPlantDetected = orangeDetector.isDetected();
+                    }
                 }
 
-                sleep(1000);
+                sleep(3000);
             }
         }
     }
@@ -174,8 +171,8 @@ public class ImageDetector implements Runnable {
         }
     }
 
-    public boolean isDebilitatedPlantDetected() {
-        return debilitatedDetected;
+    public boolean isWeakPlantDetected() {
+        return weakPlantDetected;
     }
 
     public boolean isHealthyPlantDetected() {
