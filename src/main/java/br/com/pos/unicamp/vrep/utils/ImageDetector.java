@@ -11,6 +11,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 
 import br.com.pos.unicamp.vrep.detectors.GreenDetector;
+import br.com.pos.unicamp.vrep.detectors.OrangeDetector;
 import coppelia.CharWA;
 import coppelia.IntW;
 import coppelia.IntWA;
@@ -28,7 +29,8 @@ public class ImageDetector implements Runnable {
     private final int clientID;
     private IntW kinect;
     private boolean enabled = false;
-    private boolean plantDetected = false;
+    private boolean healthyPlantDetected = false;
+    private boolean debilitatedDetected = false;
 
     public ImageDetector(final int clientID,
                          final remoteApi vrepApi) {
@@ -134,14 +136,16 @@ public class ImageDetector implements Runnable {
         enabled = false;
     }
 
-    private boolean plantDetected(final Mat mat) {
-        final GreenDetector greenDetector = new GreenDetector(mat);
+    private boolean healthyPlantDetected(final Mat mat) {
+        final GreenDetector detector = new GreenDetector(mat);
 
-        return greenDetector.isDetected();
+        return detector.isDetected();
     }
 
-    public boolean isPlantDetected() {
-        return false;
+    private boolean debilitatedPlantDetected(final Mat mat) {
+        final OrangeDetector detector = new OrangeDetector(mat);
+
+        return detector.isDetected();
     }
 
     @Override
@@ -153,7 +157,8 @@ public class ImageDetector implements Runnable {
                 if (matOptional.isPresent()) {
                     final Mat mat = matOptional.get();
 
-                    plantDetected = plantDetected(mat);
+                    healthyPlantDetected = healthyPlantDetected(mat);
+                    debilitatedDetected = debilitatedPlantDetected(mat);
                 }
 
                 sleep(1000);
@@ -167,5 +172,13 @@ public class ImageDetector implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean isDebilitatedPlantDetected() {
+        return debilitatedDetected;
+    }
+
+    public boolean isHealthyPlantDetected() {
+        return healthyPlantDetected;
     }
 }

@@ -94,8 +94,12 @@ public class PioneerRobot {
         imageDetector.turnOff();
     }
 
-    private boolean isPlantDetected() {
-        return imageDetector.isPlantDetected();
+    private boolean isHealthyPlantDetected() {
+        return imageDetector.isHealthyPlantDetected();
+    }
+
+    private boolean isDebilitatedPlantDetected() {
+        return imageDetector.isDebilitatedPlantDetected();
     }
 
     private void initializeCamera() {
