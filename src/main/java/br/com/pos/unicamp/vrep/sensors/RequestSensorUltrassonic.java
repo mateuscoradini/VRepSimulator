@@ -1,4 +1,4 @@
-package br.com.pos.unicamp.vrep.sensor.handle;
+package br.com.pos.unicamp.vrep.sensors;
 
 import coppelia.BoolW;
 import coppelia.FloatWA;

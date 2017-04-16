@@ -1,23 +1,36 @@
 package br.com.pos.unicamp.vrep;
 
-import br.com.pos.unicamp.vrep.exceptions.VRepClientException;
+import br.com.pos.unicamp.vrep.robots.Pioneer;
+import br.com.pos.unicamp.vrep.utils.RemoteAPI;
 import org.opencv.core.Core;
 
 public class App {
 
     static {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        loadOpenCVLibrary();
     }
 
     public static void main(String[] args) {
-        try {
-            final PioneerRobot robot = new PioneerRobot();
+        RemoteAPI.session(() -> {
+            startPioneer();
+        });
 
-            robot.actuation();
-        } catch (VRepClientException e) {
-            System.out.println(e.getMsg());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            final PioneerRobot robot = new PioneerRobot();
+//
+//            robot.actuation();
+//        } catch (VRepClientException e) {
+//            System.out.println(e.getMsg());
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+    }
+
+    private static void startPioneer() {
+        new Pioneer().start();
+    }
+
+    private static void loadOpenCVLibrary() {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
     }
 }

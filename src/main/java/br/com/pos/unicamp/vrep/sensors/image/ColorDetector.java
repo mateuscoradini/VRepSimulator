@@ -1,4 +1,4 @@
-package br.com.pos.unicamp.vrep.detectors;
+package br.com.pos.unicamp.vrep.sensors.image;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;

@@ -1,4 +1,4 @@
-package br.com.pos.unicamp.vrep.utils;
+package br.com.pos.unicamp.vrep.sensors.image;
 
 import coppelia.CharWA;
 import coppelia.IntWA;

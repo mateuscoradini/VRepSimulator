@@ -2,8 +2,8 @@ package br.com.pos.unicamp.vrep;
 
 import java.util.Vector;
 
-import br.com.pos.unicamp.vrep.sensor.handle.RequestSensorUltrassonic;
-import br.com.pos.unicamp.vrep.utils.ImageDetector;
+import br.com.pos.unicamp.vrep.sensors.RequestSensorUltrassonic;
+import br.com.pos.unicamp.vrep.sensors.image.ImageDetector;
 import coppelia.BoolW;
 import coppelia.FloatWA;
 import coppelia.IntW;

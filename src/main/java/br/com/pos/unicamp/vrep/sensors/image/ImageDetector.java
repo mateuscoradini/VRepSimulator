@@ -1,26 +1,16 @@
-package br.com.pos.unicamp.vrep.utils;
+package br.com.pos.unicamp.vrep.sensors.image;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.rmi.UnexpectedException;
 import java.util.Optional;
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 
-import br.com.pos.unicamp.vrep.detectors.GreenDetector;
-import br.com.pos.unicamp.vrep.detectors.OrangeDetector;
+import br.com.pos.unicamp.vrep.utils.RemoteAPI;
 import coppelia.CharWA;
 import coppelia.IntW;
 import coppelia.IntWA;
 import coppelia.remoteApi;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.core.Size;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.Imgproc;
+
+import static br.com.pos.unicamp.vrep.utils.LoopUtils.loop;
 
 public class ImageDetector implements Runnable {
 
@@ -32,6 +22,7 @@ public class ImageDetector implements Runnable {
     private boolean healthyPlantDetected = false;
     private boolean weakPlantDetected = false;
 
+    @Deprecated
     public ImageDetector(final int clientID,
                          final remoteApi vrepApi) {
         this.clientID = clientID;
@@ -41,27 +32,12 @@ public class ImageDetector implements Runnable {
         turnOn();
     }
 
-    private static void showResult(final Mat img) {
-        Imgproc.resize(img,
-                       img,
-                       new Size(img.width(),
-                                img.height()));
-        MatOfByte matOfByte = new MatOfByte();
-        Imgcodecs.imencode(".jpg",
-                           img,
-                           matOfByte);
-        final byte[] byteArray = matOfByte.toArray();
-        try {
-            InputStream in = new ByteArrayInputStream(byteArray);
-            final BufferedImage bufImage = ImageIO.read(in);
+    public ImageDetector() {
+        this.clientID = RemoteAPI.getClientId();
+        this.vrepApi = RemoteAPI.getInstance();
 
-            JFrame frame = new JFrame();
-            frame.getContentPane().add(new JLabel(new ImageIcon(bufImage)));
-            frame.pack();
-            frame.setVisible(true);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        setup();
+        turnOn();
     }
 
     private void setup() {
@@ -138,29 +114,28 @@ public class ImageDetector implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
-            if (enabled) {
-                final Optional<Mat> matOptional = Optional.ofNullable(getImage());
+        loop(() -> {
+                 if (enabled) {
+                     final Optional<Mat> matOptional = Optional.ofNullable(getImage());
 
-                if (matOptional.isPresent()) {
-                    final Mat mat = matOptional.get();
+                     if (matOptional.isPresent()) {
+                         final Mat mat = matOptional.get();
 
-                    // TODO - improve this prevalence rule
-                    final GreenDetector greenDetector = new GreenDetector(mat);
-                    final OrangeDetector orangeDetector = new OrangeDetector(mat);
+                         // TODO - improve this prevalence rule
+                         final GreenDetector greenDetector = new GreenDetector(mat);
+                         final OrangeDetector orangeDetector = new OrangeDetector(mat);
 
-                    if (greenDetector.getDetectionLevel() > orangeDetector.getDetectionLevel()) {
-                        healthyPlantDetected = greenDetector.isDetected();
-                        weakPlantDetected = false;
-                    } else {
-                        healthyPlantDetected = false;
-                        weakPlantDetected = orangeDetector.isDetected();
-                    }
-                }
-
-                sleep(3000);
-            }
-        }
+                         if (greenDetector.getDetectionLevel() > orangeDetector.getDetectionLevel()) {
+                             healthyPlantDetected = greenDetector.isDetected();
+                             weakPlantDetected = false;
+                         } else {
+                             healthyPlantDetected = false;
+                             weakPlantDetected = orangeDetector.isDetected();
+                         }
+                     }
+                 }
+             },
+             3000);
     }
 
     private void sleep(final int millis) {

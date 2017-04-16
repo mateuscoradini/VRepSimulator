@@ -1,4 +1,4 @@
-package br.com.pos.unicamp.vrep.detectors;
+package br.com.pos.unicamp.vrep.sensors.image;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
