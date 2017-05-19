@@ -31,7 +31,7 @@ public class Pioneer {
             startThread(imageDetector);
             startThread(ultrasonicSensors);
 
-            logPlantDetection();
+           // logPlantDetection();
             legacyMovementAlgorithm();
 
             sleep(500);

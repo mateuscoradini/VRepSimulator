@@ -36,8 +36,8 @@ public class ImageDetector implements Runnable {
         this.clientID = RemoteAPI.getClientId();
         this.vrepApi = RemoteAPI.getInstance();
 
-        setup();
-        turnOn();
+        //setup();
+        //turnOn();
     }
 
     private void setup() {

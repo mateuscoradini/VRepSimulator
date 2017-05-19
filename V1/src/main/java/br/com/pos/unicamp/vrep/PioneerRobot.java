@@ -55,7 +55,7 @@ public class PioneerRobot {
 		initializeActuators();
 	}
 
-	private void initializeRobot() {
+	public void initializeRobot() {
 		closeAllOpenedConnections();
 		clientID = openConnection();
 	}

@@ -1,0 +1,82 @@
+Engine: WallFollower
+InputVariable: side_sensor
+  enabled: true
+  range: 0,000 2,000
+  lock-range: false
+  term: very_close Trapezoid 0,000 0,000 0,150 0,270
+  term: close Triangle 0,250 0,300 0,350
+  term: almost_close Triangle 0,330 0,400 0,450
+  term: in_range Triangle 0,430 0,550 0,750
+  term: far Trapezoid 0,700 0,900 2,000 2,000
+InputVariable: diag_sensor
+  enabled: true
+  range: 0,000 2,000
+  lock-range: false
+  term: very_close Trapezoid 0,000 0,000 0,150 0,270
+  term: close Triangle 0,250 0,300 0,350
+  term: almost_close Triangle 0,330 0,400 0,450
+  term: in_range Triangle 0,430 0,550 0,750
+  term: far Trapezoid 0,700 0,900 2,000 2,000
+InputVariable: right_front_sensor
+  enabled: true
+  range: 0,000 2,000
+  lock-range: false
+  term: very_close Trapezoid 0,000 0,000 0,150 0,270
+  term: close Triangle 0,250 0,300 0,350
+  term: almost_close Triangle 0,330 0,400 0,450
+  term: in_range Triangle 0,430 0,550 0,750
+  term: far Trapezoid 0,700 0,900 2,000 2,000
+OutputVariable: whell_linear_speed
+  enabled: true
+  range: -0,100 0,450
+  lock-range: false
+  aggregation: Maximum
+  defuzzifier: Centroid 100
+  default: nan
+  lock-previous: false
+  term: back Triangle -0,100 -0,030 0,000
+  term: stop Triangle -0,010 0,000 0,010
+  term: slow Triangle 0,030 0,090 0,150
+  term: fast Triangle 0,200 0,300 0,400
+OutputVariable: whell_angular_speed
+  enabled: true
+  range: -0,900 0,910
+  lock-range: false
+  aggregation: Maximum
+  defuzzifier: Centroid 100
+  default: nan
+  lock-previous: false
+  term: verySharpRight Trapezoid -0,900 -0,900 -0,500 -0,450
+  term: sharpRight Triangle -0,500 -0,350 -0,200
+  term: right Triangle -0,300 -0,010 0,000
+  term: straight Triangle -0,100 0,000 0,100
+  term: left Triangle 0,000 0,100 0,300
+  term: sharpLeft Triangle 0,200 0,350 0,500
+  term: verySharpLeft Trapezoid 0,450 0,500 0,900 0,900
+RuleBlock: WallFollowerRule
+  enabled: true
+  conjunction: none
+  disjunction: none
+  implication: AlgebraicProduct
+  activation: General
+  rule: if right_front_sensor is in_range then whell_linear_speed is slow
+  rule: if right_front_sensor is in_range then whell_angular_speed is straight
+  rule: if right_front_sensor  is close then whell_linear_speed is stop
+  rule: if right_front_sensor  is almost_close then whell_linear_speed is stop
+  rule: if right_front_sensor  is close then whell_angular_speed is verySharpLeft
+  rule: if right_front_sensor  is almost_close then whell_angular_speed is verySharpLeft
+  rule: if right_front_sensor is very_close then whell_linear_speed is back
+  rule: if right_front_sensor is very_close then whell_angular_speed is verySharpLeft
+  rule: if side_sensor  is almost_close then whell_angular_speed is right
+  rule: if side_sensor  is almost_close then whell_linear_speed is slow
+  rule: if side_sensor  is close then whell_angular_speed is straight
+  rule: if side_sensor  is close then whell_linear_speed is fast
+  rule: if side_sensor  is very_close then whell_angular_speed is left
+  rule: if side_sensor  is very_close then whell_linear_speed is slow
+  rule: if side_sensor  is in_range then whell_angular_speed is sharpRight
+  rule: if side_sensor  is very_close then whell_linear_speed is fast
+  rule: if side_sensor  is far then whell_angular_speed is verySharpRight
+  rule: if side_sensor  is far then whell_linear_speed is stop
+  rule: if right_front_sensor  is far then whell_angular_speed is verySharpRight
+  rule: if right_front_sensor  is far then whell_linear_speed is stop
+  rule: if diag_sensor  is in_range then whell_angular_speed is left

@@ -1,0 +1,186 @@
+%% Adaptado de 
+%% http://www.ctan.org/tex-archive/macros/latex/contrib/IEEEtran/
+%% Traduzido para o congresso de IC da USP
+%%*****************************************************************************
+% N�o modificar
+
+\documentclass[twoside,conference,a4paper]{IEEEtran}
+
+%******************************************************************************
+% N�o modificar
+\usepackage{IEEEtsup} % Defini��es complementares e modifica��es.
+\usepackage[latin1]{inputenc} % Disponibiliza acentos.
+\usepackage[english,brazil]{babel}
+%% Disponibiliza Ingl�s e Portugu�s do Brasil.
+\usepackage{latexsym,amsfonts,amssymb} % Disponibiliza fontes adicionais.
+\usepackage{theorem} 
+\usepackage[cmex10]{amsmath} % Pacote matem�tico b�sico 
+\usepackage{url} 
+%\usepackage[portuges,brazil,english]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
+\usepackage[tight,footnotesize]{subfigure} 
+\usepackage[noadjust]{cite} % Disponibiliza melhorias em cita��es.
+\usepackage{listings}
+\usepackage{todonotes}
+%%*****************************************************************************
+
+\begin{document}
+\selectlanguage{brazil}
+\renewcommand{\IEEEkeywordsname}{Palavras-chave}
+
+%%*****************************************************************************
+
+\urlstyle{tt}
+% Indicar o nome do autor e o curso/n�vel (grad-mestrado-doutorado-especial)
+\title{MO810 - Trabalho 2}
+\author{%
+ \IEEEauthorblockN{Mateus Coradini Santos\,\IEEEauthorrefmark{1}}
+ \IEEEauthorblockA{\IEEEauthorrefmark{1}%
+				   Prof (a): Profa. Dra. Esther Luna Colombini \\
+                   Aluno especial - Mestrado \\
+                   E-mail: mateuscoradini@gmail.com}
+				   
+}
+
+%%*****************************************************************************
+
+\maketitle
+
+%%*****************************************************************************
+% Resumo do trabalho
+\begin{abstract}
+O objetivo inicial deste trabalho s�o os testes das teorias aplicadas em sala de aula, colocando em pratica a implementa��o do sistema de controle diferencial para um robo movel executado em um ambiente simulado, no caso, usamos o software V-REP. Foram implementados dois comportamentos de controle \textit{Avoid Obstacle} e \textit{Wall Follow} utilizando sistemas Fuzzy em Java e estimativa de Pose baseada em odometria.
+As classes de controle para os algoritmos em Fuzzy, foram implementadas a modo de fazer somentes testes b�sicos de implementa��o e n�o houve um trabalho de modelagem especifica para obter melhores resultados, pois o objetivo do trabalho era entender e aprender a utilizar a l�gica em fun��o das tarefas executadas anteriormente como malha aberta. A odometria n�o est� correta, e ainda necessita de tratamento, pois n�o esta limpando os erros acumulados.
+Os algoritmos de fuzzy para WallFollow e AvoidObstacle se encontram sem otimiza��o no momento.
+
+\end{abstract}
+
+% Indique tr�s palavras-chave que descrevem o trabalho
+\begin{IEEEkeywords}
+ V-REP Pioneer AvoidObstacleColision WallFollow Fuzzy
+\end{IEEEkeywords}
+
+%%*****************************************************************************
+% Modifique as se��es de acordo com o seu projeto
+
+\section{Introdu��o}
+
+Este projeto consiste no desenvolvimento de um sistema com inteligencia necess�ria para o controle do modelo de robo \textit{Pioneer P3-DX} no simulador \textit{V-REP}. A implementa��o foi realizada em Java vers�o 1.7, com a utiliza��o de algumas bibliotecas como JFuzzyLite. Os ciclos de leitura e atua��o dos sensores s�o controlados por threads na qual utilizamos um tempo de 300ms para atua��o. O c�digo fonte pode ser obtido em https://github.com/mateuscoradini/VRepSimulator/V2. As instru��es de instala��o se encontram na pagina principal, mapeados para MAC-OS e Windows. 
+
+Este artigo est� dividido em tr�s sess�es principais, cada uma com sua apresenta��o e discuss�o dos resultados.
+
+\begin{itemize}
+ \item Odometria - Estimativa de Pose
+ \item Controle: Avoid Obstaclea (Evitar obst�culo)
+ \item Controle: Wall Follow (Seguir parede)
+\end{itemize}
+
+
+\section{Odometria}
+A estimativa de pose, foi comparada inicialmente ao GroundThruth (posi��o real do rob�), para que medisse as falhas em acumulo, ocorridas durante o tempo de execu��o do trajeto do rob�.
+Para isso, a implementa��o foi realizada na classe \textit{PositionLocator}. Conforme velocidade das rodas, calculados pela formula citada em sala de aula, estima-se a localiza��o aproximada no vetor x,y,z, a localiza��o do rob�.
+
+\subsection{Componente: Rodas }
+ Cada roda, possui um enconder, que nos informa o valor da sua posi��o angular. Com as informa��es desses enconders, � possivel determinar a velocidade do rob� atr�s da formula:
+ 
+\[ V = \frac{\Delta \theta}{\Delta time} R \]
+
+Em que \( \Delta \theta \) representa a diferen�a angular entre posi��es do \textit{encoder} durante um intervalo de tempo \(\Delta time\) e \(R\) � o raio da roda. � importante destacar que o c�lculo da diferen�a angular deve levar em conta a orienta��o do giro e o universo em que est�o sendo determinados os �ngulos.  
+
+A implementa��o do m�todos de c�lculo de velocidade da roda encontra-se na classe \textit{RobotWheelHandler}. A orienta��o do giro � obtida utilizando a hip�tese que a diferen�a angular deve ser sempre menor do que \( \pi \). 
+
+\subsection{Velocidade do Rob� diferencial}
+Dada a velocidade de cada roda, pode-se calcular a velocidade linear e angular do rob� atrav�s da f�rmula:
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/formula1.png}
+\caption{Formula: Velocidade Linear (V), (W) Velocidade Rotacional ao longo do eixo}
+\label{fig:fig1}
+\end{figure}
+
+Em que \(V_r\) � a velocidade da roda direita, \(V_l\) � a roda esquerda, \(D\) � a dist�ncia entre as rodas, \(V\) � a velocidade linear e \(\omega\) � a velocidade angular. 
+
+\subsection{Pose}
+A pose do rob� � ent�o calculada 
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/code-1.png}
+\caption{Classe PositionLocator: odometry}
+\label{fig:fig2}
+\end{figure}
+
+
+\subsection{Resultados dos testes}
+
+N�o foi possivel gerar o grafico de coordenadas das linhas de compara��o, ent�o determinei uma saida de console comparativa, somente para verificar a implementa��o e efetuar teste de que se havia erro acumulado.
+A saida abaixo foi gerada ao usar o algoritmo para controle de Wall Follow, ap�s alguns algum tempo de execu��o:
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/console-1.png}
+\caption{Saida do console em vetor x,y, orienta��o, da PoseLocator}
+\label{fig:fig3}
+\end{figure}
+
+N�o consegui concluir com uma dimens�o exata o acumulo erro cr�tico. Gostaria de gerar esses dados a partir de um grafico e conseguir tabelar o acumulo de erro. Para a pr�xima melhoria, irei implementar alguma alternativa para ter visualmente o caminho de cada posi��o percorrida e estimada do rob�.
+Logo se nota uma diferen�a ap�s a execu��o por um minuto a minuto de execu��o, ap�s a rota��o do rob�, o acumulo de diferen�a da odometria e do GroundThruth da posi��o real do robo. Para a implementa��o ser finalizada, necessita de uma corre��o de orienta��o usando-se algum outro enconder anexado ao rob� Pioneer.
+
+
+\section{Robot Fuzzy Control: Wall Follow - Seguir Parede}
+A implementa��o da l�gica fuzzy e do comportamento de seguir parede foi implementado na classe \textit{FuzzyWallFollower}. O controle tem por objetivo manter uma dist�ncia de 30cm da parede direita. A entrada do sistemas s�o apenas dois sensores do \textit{Pionner} modelados de acordo com a figura~\ref{fig:fig5}. A figura abaixo representa uma das modelagens usadas no sensor para o controle de wall following.
+Pode-se ver todas as regras na classe (\textit{FuzzyWallFollower}). As figuras abaixo somente exemplificam a modelagem implementadas nas regras de entrada e sa�da e os exemplos de cada ativa��o.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/sensor-wall-follow-model.png}
+\caption{Modelagem sensor frontal}
+\label{fig:fig5}
+\end{figure}
+
+As sa�das do sistema s�o a velocidade angular - figura~\ref{fig:fig6} - e a velocidade linear - figura~\ref{fig:fig7}. 
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/velocidade-angular-saida.png}
+\caption{Modelagem Fuzzy da velocidade angular}
+\label{fig:fig6}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/velocidade-linear-saida.png}
+\caption{Modelagem velocidade linear}
+\label{fig:fig7}
+\end{figure}
+
+\subsection{Resultados}
+
+Os resultados se mostraram se promissores quando-se usado o fuzzy com uma modelagem correta, pode-se obter precis�o nos comportamentos de execu��o dos algoritmos mencionados acima. Os resultados descritos nesse trabalho apenas foram exemplifica��es das implementa��es sugeridas ao decorrer do trabalho. Para cada implementa��o, obtive um teste b�sico para avaliar o aprendizado da orienta��o passada em sala de aula.
+Por�m ainda h� alguns comportamentos a serem implementados, e o ajuste fino dessa modelagem necessita ser realizado caso queira que o comportamento do rob�, se adapte-se ao ambiente sugerido.
+N�o consegui evitar alguns problemas como as passagens pelos obstaculos do cen�rio, por�m consegui entender a l�gica de implementa��o dos algoritmos citados e consegui exemplifica-los na linguagem de programa��o Java.
+Foram usados alguns artigos como leitura base de conhecimento das implementa��es realizadas ao longo da ultima d�cada.Artigos \cite{Omrane:2016}, \cite{Beom:1995}.
+
+
+
+
+
+%******************************************************************************
+% Refer�ncias - Definidas no arquivo Relatorio.bib
+ +-------------+
+
+\bibliographystyle{IEEEtran}
+
+\bibliography{Relatorio}
+
+
+%******************************************************************************
+
+
+
+\end{document}

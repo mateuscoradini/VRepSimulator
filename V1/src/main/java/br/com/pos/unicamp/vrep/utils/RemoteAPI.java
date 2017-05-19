@@ -34,7 +34,7 @@ public class RemoteAPI {
 
     public static void session(final Runnable runnable) {
         start();
-        runnable.run();
+        //runnable.run();
         stop();
     }
 
