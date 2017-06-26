@@ -41,7 +41,7 @@
 % Indicar o nome do autor e o curso/nível (grad-mestrado-doutorado-especial)
 \title{The Constant Gardener}
 \author{%
- \IEEEauthorblockN{Guilherme Carreiro Gomes (180074)\IEEEauthorrefmark{1}, Luísa Madeira Cardoso\IEEEauthorrefmark{1}, Mateus Coradini Santos (159577)\,\IEEEauthorrefmark{1}}
+ \IEEEauthorblockN{Guilherme Carreiro Gomes (180074)\IEEEauthorrefmark{1}, Luísa Madeira Cardoso (092109)\IEEEauthorrefmark{1}, Mateus Coradini Santos (159577)\,\IEEEauthorrefmark{1}}
  \IEEEauthorblockA{\IEEEauthorrefmark{1}%
                    Aluno especial - Mestrado \\
                    E-mails: karreiro@gmail.com, lu.madeira2@gmail.com, mateuscoradini@gmail.com}
@@ -192,7 +192,7 @@ Por definição, o KF trabalha com probabilidades lineares. Sua versão extendida (
 \begin{algorithmic} 
 \STATE \(\bar{\Sigma}_{t} = G_t\Sigma_{t-1}G_t^T + R_t \)
 \STATE \(K_t = \bar{\Sigma}_{t} H_t^T (H_t\bar{\Sigma}_{t}H_t^T + Q_t)^-1  \)
-\STATE \(\mu_t = \bar{\mu}_t + K_t(\bar{z}_t - z_t )\)
+\STATE \(\mu_t = \bar{\mu}_t + K_t(z_t - \hat{z}_t)\)
 \STATE \(\Sigma_t = (I - K_t H_t)\bar{\Sigma}_{t} \)
 \RETURN \(\mu_t, \Sigma_t\)
 \end{algorithmic}
@@ -271,7 +271,7 @@ H_t = \left[
 \right]
 \]
 
-A terceira linha do algoritmo realiza o cálculo de \(\mu_t\). A equação \(\bar{z}_t - z_t\) calcula um valor chamado de \textit{inovação} ou resíduo. Em termos práticos ele apenas estima a diferença entre onde o \textit{landmark} deveria estar e onde ele está. Para cada \textit{landmark} utilizado duas linhas são acrescentadas as matrizes:
+A terceira linha do algoritmo realiza o cálculo de \(\mu_t\). A equação \(z_t - \hat{z}_t\) calcula um valor chamado de \textit{inovação} ou resíduo. Em termos práticos ele apenas estima a diferença entre onde o \textit{landmark} deveria estar e onde ele está. A formulação utilizada na implementação realiza na verdade a diferença inversa \(\hat{z}_t - z_t\) e matriz \(H_t\) foi apresentada de acordo com essa mudança. Para cada \textit{landmark} utilizado duas linhas são acrescentadas as matrizes:
 \[z = \left[ 
 \begin{array}{c}
 L_{range} \\
