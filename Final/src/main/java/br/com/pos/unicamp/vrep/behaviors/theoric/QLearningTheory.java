@@ -15,12 +15,13 @@ public class QLearningTheory {
 	private final double gamma = 0.9; // Eagerness - 0 looks in the near future,
 										// 1 looks in the distant future
 
-	private final int mazeWidth = 8;
-	private final int mazeHeight = 8;
+	private final int mazeWidth = 4;
+	private final int mazeHeight = 4;
 	private final int statesCount = mazeHeight * mazeWidth;
 
-	private final int reward = 100;
-	private final int penalty = -10;
+	private final int reward = 1;
+	private final int maxReward = 10;
+	private final int penalty = -1;
 
 	private char[][] maze; // Maze read from file
 	private int[][] R; // Reward lookup
@@ -79,13 +80,15 @@ public class QLearningTheory {
 			// the maze
 			if (maze[i][j] != 'F') {
 
-				// Try to move left in the maze
-				int goLeft = j - 1;
-				if (goLeft >= 0) {
-					int target = i * mazeWidth + goLeft;
-					if (maze[i][goLeft] == '0') {
+				// Try to move wallfollowing
+				int wallfollower = j - 1;
+				if (wallfollower >= 0) {
+					int target = i * mazeWidth + wallfollower;
+					if (maze[i][wallfollower] == '0') {
 						R[k][target] = 0;
-					} else if (maze[i][goLeft] == 'F') {
+					} else if (maze[i][wallfollower] == 'D') {
+						R[k][target] = penalty;						
+					}else if (maze[i][wallfollower] == 'F') {
 						R[k][target] = reward;
 					} else {
 						R[k][target] = penalty;

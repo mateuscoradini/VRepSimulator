@@ -1,0 +1,514 @@
+%% Adaptado de 
+%% http://www.ctan.org/tex-archive/macros/latex/contrib/IEEEtran/
+%% Traduzido para o congresso de IC da USP
+%%*****************************************************************************
+% Não modificar
+
+\documentclass[twoside,conference,a4paper]{IEEEtran}
+
+%******************************************************************************
+% Não modificar
+\usepackage{IEEEtsup} % Definições complementares e modificações.
+\usepackage[latin1]{inputenc} % Disponibiliza acentos.
+\usepackage[english,brazil]{babel}
+%% Disponibiliza Inglês e Português do Brasil.
+\usepackage{latexsym,amsfonts,amssymb} % Disponibiliza fontes adicionais.
+\usepackage{theorem} 
+\usepackage[cmex10]{amsmath} % Pacote matemático básico 
+\usepackage{url} 
+%\usepackage[portuges,brazil,english]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{color}
+\usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
+\usepackage[tight,footnotesize]{subfigure} 
+\usepackage[noadjust]{cite} % Disponibiliza melhorias em citações.
+\usepackage{listings}
+\usepackage{todonotes}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+%%*****************************************************************************
+
+\begin{document}
+\selectlanguage{brazil}
+\renewcommand{\IEEEkeywordsname}{Palavras-chave}
+
+%%*****************************************************************************
+
+\urlstyle{tt}
+% Indicar o nome do autor e o curso/nível (grad-mestrado-doutorado-especial)
+\title{The Constant Gardener}
+\author{%
+ \IEEEauthorblockN{Guilherme Carreiro Gomes (180074)\IEEEauthorrefmark{1}, Luísa Madeira Cardoso\IEEEauthorrefmark{1}, Mateus Coradini Santos (159577)\,\IEEEauthorrefmark{1}}
+ \IEEEauthorblockA{\IEEEauthorrefmark{1}%
+                   Aluno especial - Mestrado \\
+                   E-mails: karreiro@gmail.com, lu.madeira2@gmail.com, mateuscoradini@gmail.com}
+}
+
+%%*****************************************************************************
+
+\maketitle
+
+%%*****************************************************************************
+% Resumo do trabalho
+\begin{abstract}
+O objetivo deste trabalho é implementar um sistema de localização e planejamento de rotas para um robô móvel. Para localização, utilizou-se o filtro Kalman extendido, combinando a estimativa provida pela odometria com a observação da localização de uma base. Para o planejamento e execução de rotas, utilizou-se o algoritmo A* combinado com o comportamento "Go to Goal". Também discutem-se possíveis melhorias para a implementação desenvolvida, utilizando técnicas de aprendizado por reforço.
+O filtro de Kalman provou-se uma técnica eficiente para computar a localização do robô, especialmente quando mais de uma base é utilizada fusão sensorial. As técnicas utilizadas para implementação do módulo de planejamento de caminhos também atingiram êxito.
+
+\end{abstract}
+
+% Indique três palavras-chave que descrevem o trabalho
+\begin{IEEEkeywords}
+ V-REP Pioneer Localização KF EKF A* A-Star GoToGoal Aprendizado por reforço
+\end{IEEEkeywords}
+
+%%*****************************************************************************
+% Modifique as seções de acordo com o seu projeto
+
+\section{Introdução}
+O desenvolvimento de um robô jardineiro envolve uma grande quantidade de desafios, entre eles: a movimentação do robô com base em seu modelo cinemático, a percepção de sua localização, a identificação da saúde das plantas através de uma câmera, a identificação do tipo de planta tratada, o planejamento do percurso do robô (para visitar as plantas periodicamente), a atuação sobre as plantas (para a adição de adubo ou água, por exemplo) e a interface com o usuário, permitindo a flexibilização de diversos recursos.
+
+Neste projeto, isolamos duas questões essenciais para um robô desse tipo. O planejamento da rota, necessário para atingir todas as plantas, e o desenvolvimento da implementação de um modelo de localização altamente preciso. Para possibilitar a implementação dessas duas provas de conceito, certas premissas foram assumidas, desacoplando-as de um cenário maior e mais complexo. Tais premissas serão discutidas e apresentadas ao longo do artigo.
+
+Todas as simulações expostas foram realizadas no simulador \textit{V-REP} utilizando o \textit{Pioneer P3-DX}. As implementações foram feitas utilizando Java 8 e Python 3.5. O módulo de localização encontra-se em https://github.com/luwood/MO810-vrep-python, já o módulo relacionado ao planejamento de caminhos pode ser acessado em https://github.com/karreiro/pathfinding-lab, por fim, o projeto final integrando os dois módulos com o \textit{V-REP} encontra-se em https://github.com/mateuscoradini/final-project.
+
+Nas seções subsequentes, abordaremos respectivamente:  II) Localização, onde Luísa discute as técnicas e os resultados obtidos utilizando odometria, uma base para fusão sensorial e os conceitos que envolvem a implementação do filtro de Kalman; III) Planejamento e execução de rotas, onde Guilherme expõe os desafios envolvendo a implementação do algoritmo A* em um cenário envolvendo um robô móvel; em IV) Q-Learning e Aprendizado, Mateus apresenta técnicas para evoluirmos a solução apresentada utilizando aprendizado para coordenação dos comportamentos; e finalmente em V) todos integrantes concluem interpolando todos os tópicos abordados.
+
+
+\section{Localização}
+\subsection{Odometria}
+O cálculo da odometria é realizado com base na estimativa de velocidade das rodas.
+Cada roda possui um \textit{encoder} que provê sua posição angular. Através da coleta temporal desta informação é possível determinar sua velocidade utilizando a seguinte fórmula:
+ 
+\[ V = \frac{\Delta \theta}{\Delta time} R \]
+
+Em que \( \Delta \theta \) representa a diferença angular entre posições do \textit{encoder} durante um intervalo de tempo \(\Delta time\) e \(R\) é o raio da roda. É importante destacar que o cálculo da diferença angular deve levar em conta a orientação do giro e o universo em que os ângulos estão.  
+
+Dada a velocidade de cada roda, pode-se calcular a velocidade linear e angular do robô através da fórmula:
+
+\[ V = \frac{V_r + V_l}{2}\]
+\[ \omega = \frac{V_r - V_l}{D}\]
+
+Em que \(V_r\) é a velocidade da roda direita, \(V_l\) é a roda esquerda, \(D\) é a distância entre as rodas, \(V\) é a velocidade linear e \(\omega\) é a velocidade angular. 
+
+A pose do robô no momento \(t\) depende da pose anterior, em \(t-1\), e pode ser calculada através das equações:
+
+\[x_t = x_{t-1} + (\Delta s * cos(\theta_{t-1} + \frac{\Delta \theta}{2}) )\]
+\[y_t = y_{t-1} + (\Delta s * sin(\theta_{t-1} + \frac{\Delta \theta}{2}) )\]
+\[\theta = \theta_{t-1} + \Delta \theta\]
+
+A implementação do cálculo da odomoetria é feita pela classe  \textit{OdometryPoseUpdater}. Para fins práticos a pose inicial do robô é obtida com a leitura do \textit{Ground Truth}. O cálculo da velocidade da roda encontra-se em uma classes distinta chamada \textit{Wheel}.  A orientação do giro é obtida utilizando a hipótese que a diferença angular deve ser sempre menor do que \( \pi \). 
+
+
+\subsection{Localizando a Base}
+A ideia inicial deste projeto era permitir que a localização do robô fosse obtida a partir da comunicação com uma base. O princípio seria semelhante a tecnologia utilizada no StarGazer (HagiSonic): o robô envia um sinal e a base o reflete. Deste modo é possível determinar a distância entre os dois objetos. 
+\subsubsection{Teoria}
+Através da distância de um único ponto, é impossível determinar sua localização precisa. Considerando o sistema local de coordenadas do robô, pode-se ver na figura \ref{fig:robot-base} que a base poderia estar em qualquer ponto do círculo determinado pela distância calculada entre o sensor e a base. Portanto, são necessários mais sensores no robô para determinar a localização da base. 
+
+Com três sensores é possível determinar a posição da base através da resolução de um sistema linear de equações. Na figura \ref{fig:robot3-base} podemos ver que o círculo que parte de cada sensor, se intersecta em um único ponto. 
+
+A equação de cada uma das circunferências pode ser descrita da seguinte forma:
+\begin{equation}
+r_1^2 = (x - x_1)^2 + (y - y_1)^2 
+\end{equation}
+\begin{equation}
+r_2^2 = (x - x_2)^2 + (y - y_2)^2 
+\end{equation}
+\begin{equation}
+r_3^2 = (x - x_3)^2 + (y - y_3)^2 \\
+\end{equation}
+
+Para encontrar o ponto de intersecção entre as três circunferências, é necessário encontrar os valores de \(x\) e \(y\) combinando as três equações quadráticas em um sistema de duas equações lineares. 
+Subtraindo (2) de (1) e (3) de (1):
+
+\[
+2x(x_2 - x_1)^2 + 2y(y_2 - y_1)^2 + (x_1^2 - x_2^2) + (y_1^2 - y_2^2) - (r_1^2 - r_2^2) = 0 \]
+\[
+2x(x_3 - x_1)^2 + 2y(y_3 - y_1)^2 + (x_1^2 - x_3^2) + (y_1^2 - y_3^2) - (r_1^2 - r_3^2) = 0
+\]
+
+A solução do sistema é a localização da base considerando o sistema de coordenadas local do robô. 
+
+\subsubsection{Transformação de coordenadas}
+Para implementação do filtro de Kalman utilizado neste trabalho é necessário identificar a posição da base no sistema de coordenadas globais. 
+A transformação do sistema de coordenadas locais do robô para o sistema global é dado pela rotação \((4)\) seguida da translação\((5)\) do ponto\((x,y)\), no qual \(dx\), \(dy\) e \(\alpha\) são dados pela pose do robô. 
+\begin{equation}
+\left[ 
+\begin{array}{ccc} 
+cos(\alpha) & -sin(\alpha) & 0 \\ 
+sin(\alpha) & cos(\alpha) & 0 \\
+0 & 0 & 1 
+\end{array}
+\right] \times \left[\begin{array}{c} x \\ y \\ 1 \end{array}\right]
+\end{equation}
+
+
+\begin{equation}
+\left[ 
+\begin{array}{ccc} 
+1 & 0 & dx \\ 
+0 & 1 & dy \\
+0 & 0 & 1 
+\end{array}
+\right] \times \left[\begin{array}{c} x \\ y \\ 1 \end{array}\right]
+\end{equation}
+
+ 
+
+\subsubsection{Implementação}
+O robô possui três transceptores em seu topo que estão dispostos como mostrado na figura \ref{fig:robot3-base}. A base se encontra nas coordenadas \((0,0)\) do sistema global de referência. A distância entre os tranceptores e a base é calculada utilizando o módulo de cálculo de distâncias provido pelo simulador V-REP. É importante ressaltar que este cálculo de distâncias em uma simulação mais verossímil precisaria ser implementado.
+
+A implementação do cálculo de intersecção das três circunferências é o método \textit{calculatePoint} no módulo \textit{AngleUniverse}. Ele é utilizado pela classe \textit{BaseDetector} para calcular a posição da base dadas as distâncias obtidas dos transceptores. A base é representada pela classe \textit{DetectedBase} que possui o método \textit{getAbsolutePosition} que realiza a transformação das coordenadas locais para as coordenadas globais dada uma determinada pose. 
+
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/robot-base-radius.png}
+\caption{Robô com apenas um sensor de distância da base}
+\label{fig:robot-base}
+\end{figure}
+
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/robot-base-three.png}
+\caption{Robô três sensores de distância da base}
+\label{fig:robot3-base}
+\end{figure}
+
+
+\subsection{Filtro de Kalman}
+
+O filtro de Kalman (KF) é uma implementação de filtros \textit{Bayesianos} que realiza remoção de ruídos e predição de valores num sistema de estados contínuos. O interessante desta técnica é sua capacidade de combinar diferentes estimativas e suas respectivas covariâncias, computando uma distribuição Gaussiana baseada apenas em estados anteriores.
+
+Por definição, o KF trabalha com probabilidades lineares. Sua versão extendida (EFK) trabalha com a hipótese de as funções que modelam as probabilidades não são lineares. Como um robô tipicamente pode realizar uma trajetória circular, o modelo mais indicado é o EKF.
+
+
+\begin{algorithm}
+\caption{Extended Kalman filter \(\bar{\mu_t}, \mu_{t-1}, \Sigma_{t-1}, \Sigma_{\Delta t}, z_t\)}
+ \label{alg:ekf}
+\begin{algorithmic} 
+\STATE \(\bar{\Sigma}_{t} = G_t\Sigma_{t-1}G_t^T + R_t \)
+\STATE \(K_t = \bar{\Sigma}_{t} H_t^T (H_t\bar{\Sigma}_{t}H_t^T + Q_t)^-1  \)
+\STATE \(\mu_t = \bar{\mu}_t + K_t(\bar{z}_t - z_t )\)
+\STATE \(\Sigma_t = (I - K_t H_t)\bar{\Sigma}_{t} \)
+\RETURN \(\mu_t, \Sigma_t\)
+\end{algorithmic}
+\end{algorithm}
+
+A lógica do EKF está descrita pelo algoritmo \ref{alg:ekf}, onde \(\bar{\mu_t}\) pode ser entendido como a estimativa do estado no tempo \(t\), \(\mu_{t-1}\) o cálculo do estado no tempo \(t-1\), \(\Sigma_{t-1}\) a covariância calculada em \(t-1\) e \(z_t\) são as observações no tempo t. 
+
+\subsubsection{Localização com EKF}
+
+Esta sessão é dedicada a explicar como o filtro de Kalman Extendido pode ser utilizado para realizar a localização do robô com o auxílio da detecção de \textit{landmarks}. As fórmulas utilizadas foram primariamente retiradas da  tabela 7.2 do livro \textit{Probabilistic Robotics}\cite{thrun2005probabilistic}. Como suporte também foi utilizada uma apresentação realizada em 2014\cite{pinheiro2014}.
+
+O objetivo da utilização do filtro é a melhoria na cálculo da pose do robô.  Portanto, na primeira linha do algoritmo \ref{alg:ekf},  \(\mu_t\) representa a pose do robô no instante de tempo \(t\) . A estimativa de \(\mu_t\), \(\bar{\mu}_t\), é dada pelo computação da odometria. 
+
+A primeira linha do algoritmo pode ser entendida como o modelo de erro da odometria. Portanto, foi acrescentado mais um fator em sua composição. Sua forma final é dada pela equação:
+\[\bar{\Sigma}_{t} = G_t\Sigma_{t-1}G_t^T + V_t \Sigma_{\Delta t} V_t^T + R_t \]
+
+Os valores de \(G_t\), \(Sigma_{\Delta t}\), \(V_t\) e \(R_t\) estão descritos abaixo:
+
+\[\beta_t = \theta_{t-1} + \frac{\Delta \theta_t}{2} \]
+\[ G_t = 
+\left[ 
+\begin{array}{ccc} 
+1 & 0 & -\Delta s * sin(\beta_t) \\ 
+0 & 1 & \Delta s * cos(\beta_t) \\
+0 & 0 & 1 
+\end{array}
+\right]
+\]
+
+\[ \Sigma_{\Delta t} = 
+\left[ 
+\begin{array}{cc} 
+K_s |\Delta s_t| & 0\\ 
+0 & K_t |\Delta \theta_t| \\
+\end{array}
+\right]
+\]
+\[D = wheelsDistance\]
+\[ V_t = 
+\left[ 
+\begin{array}{cc} 
+\frac{1}{2} cos(\beta_t) - \frac{\Delta s}{2D} sin(\beta_t) 
+& \frac{1}{2} cos(\beta_t) + \frac{\Delta s}{2D} sin(\beta_t) \\ 
+\frac{1}{2} sin(\beta_t) + \frac{\Delta s}{2D} cos(\beta_t) &
+\frac{1}{2} sin(\beta_t) - \frac{\Delta s}{2D} cos(\beta_t) \\
+\frac{1}{D} & \frac{1}{D} 
+\end{array}
+\right]
+\]
+\[R_t = \left[ 
+\begin{array}{ccc} 
+\sigma_x^2 & 0 & 0 \\ 
+0 & \sigma_y^2 & 0 \\
+0 & 0 & \sigma_{\theta}^2 
+\end{array}
+\right]
+\]
+
+A segunda linha do algoritmo calcula a matriz \(K_t\), conhecida como o ganho de Kalman. Essa matriz pode ser entendida como o mecanismo que indica se deve-se confiar no valor estimado (odometria) ou na observação dos sensores (\(z\)).
+ No cenário proposto, os sensores são capazes de estimar a posição de \textit{landmarks} cuja posição real é conhecida anteriormente. A matriz \(Q\) representa a distribuição dos erros das observações. A matriz \(H_t\) é a matriz Jacobiana do cálculo de \(z\).  Portanto, para cada \textit{landmark} que encontra-se em \((L_x, L_y)\), as matrizes \(H\) e \(Q\) recebem duas linhas:
+\[ x_t = \bar{\mu}_t[x], y_t = \bar{\mu}_t[y]\]
+\[q = (L_x - x_t)^2 + (L_y - y_t)^2\]
+\[
+H_t = \left[ 
+\begin{array}{ccc} 
+-\frac{L_x - x_t}{\sqrt{q}} & -\frac{L_y - y_t}{\sqrt{q}} & 0 \\ 
+\frac{L_y-y_t}{q} & -\frac{L_x-x_t}{q} & -1 
+\end{array}
+\right]
+\]
+\[Q_t = \left[ 
+\begin{array}{cc} 
+\sigma_{Id}^2 & 0  \\ 
+0 & \sigma_{I\theta}^2 
+\end{array}
+\right]
+\]
+
+A terceira linha do algoritmo realiza o cálculo de \(\mu_t\). A equação \(\bar{z}_t - z_t\) calcula um valor chamado de \textit{inovação} ou resíduo. Em termos práticos ele apenas estima a diferença entre onde o \textit{landmark} deveria estar e onde ele está. Para cada \textit{landmark} utilizado duas linhas são acrescentadas as matrizes:
+\[z = \left[ 
+\begin{array}{c}
+L_{range} \\
+L_{bearing}
+\end{array}
+\right]
+\]
+\[\bar{z} = \left[ 
+\begin{array}{c}
+l_{range} \\
+l_{bearing}
+\end{array}
+\right]
+\]
+Onde \(L\) representa a posição real do \textit{landmark} e \(l\) a posição calculada através dos sensores. As funções de distância e inclinação podem ser calculadas através das equações:
+\[p_{range} = \sqrt{(p_x - x_t )^2 + (p_y - y_t)^2 }\]
+\[p_{bearing} = arctan2((p_y - y_t ), (p_x - x_t)) - \theta_t\]
+
+\subsubsection{Implementação}
+A implementação do filtro extendido de Kalman encontra-se na classe \textit{KalmanFilterPoseUpdater}. É importante notar que este componente utiliza o cálculo da odometria e sempre realiza a atualização do último valor calculado pela mesma. 
+
+Os valores das constantes utilizadas estão descritos na tabela \ref{tab:cvalues}
+
+\begin{table}[ht]
+\renewcommand{\arraystretch}{1.3}
+\centering
+ \caption{Constantes utilizadas}
+ \label{tab:cvalues}
+ \begin{tabular}{lc}\hline
+Variável & Valor \\ \hline \hline
+\(K_s\) & 0.1 \\
+\(K_t\) & 0.1     \\
+\(\sigma_x\)  & 1     \\
+\(\sigma_y\)  & 1     \\
+\(\sigma_\theta\)  & 1     \\
+\(\sigma_{Id}\)  & 0.5     \\
+\(\sigma_{I\theta}\)  & 0.1     \\ \hline
+ \end{tabular}
+\end{table}
+
+\subsection{Resultados}
+Os experimentos realizados com as técnicas de estimativa de pose do robô utilizam o algoritmo de Braitenberg para movimentação do mesmo. 
+
+\subsubsection{Odometria}
+O gráfico comparando a posição real do robô e a posição calculada através da odometria pose ser visto na figura~\ref{fig:fig0}. É possível observar que o trajeto em linha reta obtido pela odometria é preciso. Porém assim que a primeira curva é realizada a diferença entre as posições começa a divergir. A diferença torna-se maior a cada iteração devido aos erros acumulados. A tabela \ref{tab:tab1} mostra a evolução do erro no cálculo da orientação durante um determinado período de teste. 
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/odometry.png}
+\caption{Odometria}
+\label{fig:fig0}
+\end{figure}
+
+\begin{table}[ht]
+\renewcommand{\arraystretch}{1.3}
+\centering
+ \caption{Diferença \(\theta\) em graus - a cada 200ms}
+ \label{tab:tab1}
+ \begin{tabular}{lcc}\hline
+Real & Odometria & Erro \\ \hline \hline
+  -0.424  & -0.406    & 0.018 \\
+-0.515  & -0.488    & 0.027 \\
+-0.783  & -0.718    & 0.065 \\
+-1.182  & -1.065    & 0.117 \\
+-2.033  & -1.818    & 0.215 \\
+-3.048  & -2.724    & 0.324 \\
+-4.355  & -3.861    & 0.494 \\
+-6.122  & -5.416    & 0.706 \\
+-7.843  & -6.953    & 0.89  \\
+-9.851  & -8.747    & 1.104 \\
+-12.613 & -11.227   & 1.386 \\
+-14.864 & -13.288   & 1.576 \\
+-18.003 & -16.129   & 1.874 \\
+-22.479 & -20.084   & 2.395 \\ \hline
+ \end{tabular}
+\end{table}
+
+Pode-se concluir que a odometria é um método de estimativa extremamente suscetível a erros acumulados. Para tornar este método viável seria necessário necessário realizar correções no cálculo da orientação. A utilização de uma bússola, por exemplo, poderia auxiliar nesta computação. 
+
+\subsubsection{Filtro de Kalman Extendido}
+A figura \ref{fig:efk1} mostra a comparação entre a posição estimada pela odometria e o filtro de Kalman e a posição real do robô quando apenas uma base é utilizada. Pode-se observar a evidente melhoria no trajeto calculado em comparação com a figura \ref{fig:fig0} (cenário que utiliza apenas a odometria). Porém também fica evidente que em alguns pontos o erro na predição da rota é maior do que em outros. 
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/kalman-1base.png}
+\caption{EKF: Utilizando 1 base}
+\label{fig:efk1}
+\end{figure}
+
+Na tentativa de melhorar o cálculo da trajetória, foi acrescentada mais uma base, na posição \((3, -3)\). O resultado desta iteração pode ser visto na figura \ref{fig:efk2}. A rota torna-se mais precisa do que quando utilza-se apenas uma base. 
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/kalman-2base.png}
+\caption{EKF: Utilizando 2 bases}
+\label{fig:efk2}
+\end{figure}
+
+Acrescentando mais uma base no ambiente, na coordenada \((4,6)\), o cálculo da trajetória fica muito próximo da trajetória real, como pode ser notado na figura \ref{fig:efk3}. 
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/kalman-3base.png}
+\caption{EKF: Utilizando 3 bases}
+\label{fig:efk3}
+\end{figure}
+
+
+
+
+\section{Plenejamento e execução de rotas}
+O conceito de planejamento de caminhos é bastante amplo em robótica, englobando desde tópicos relacionados a inteligência artificial até teoria de controle. Entretanto, em suma, tal conceito refere-se técnicas para mover um robô de determinando ponto a outro \cite{duchovn2014path}.
+
+O módulo de planejamento de rota funciona considerando a premissa da existência de um grid com informações do ambiente. Tal discretização deve conter coordenadas de paredes, obstáculos, plantas e qualquer outro entrave que influencie na rota do robô. Dessa maneira, o robô pode ser capaz de visitar todas as plantas, desviando de eventuais obstáculos.
+
+Com esta premissa bem definida, note que este módulo possui dois grandes desafios, analisados nas próximas sub-seções: planejar rotas e seguir determinada trajetória, até o objetivo definido.
+
+\subsection{Planejamento de rota}
+Para realizar o planejamento dos caminhos, chegou-se a conclusão que o algoritmo A* (ou A-Star, ou ainda, A-Estrela) seria o mais apropriado para a realização de tal tarefa, pois é uma das melhores estratégias para planejamento de rotas que pode ser aplicado em um grid métrico. Combinando conceitos do algoritmo do melhor caminho com heurística, o A-Star possui ótimos resultados \cite{duchovn2014path}, num tempo bastante razoável, considerando o escopo do problema abordado.
+
+A base do A* é sua função de avaliação de nó, que calcula a relevância de cada nó no grid, considerando sua origem e o destino na trajetória. Tal função pode ser representada da seguinte maneira:
+
+\[ f(n) = g(n) + h(n) \]
+
+O elemento "g(n)" representa o custo da locomoção do robô entre nó avaliado e o nó de origem. Enquanto o "h(n)" representa o custo de locomoção do nó avaliado até o nó de destino, repare que apesar de tal valor ser alcançável, uma heurística como Manhattan, distância Euclideana, ou ainda Chebyshev, apresenta-se muito mais eficiente e barata \cite{duchovn2014path}.
+
+De modo genérico, podemos dizer que o comportamento do A* funciona basicamente da seguinte maneira:
+\begin{itemize}
+\item Primeiramente elenca o primeiro nó, e gradativamente se expande para os nós vizinhos;
+\item Cada vizinho sub-sequente é avaliado, caso não seja um obstáculo, pela função do A*, organizando os vizinhos de acordo com o valor obtido;
+\item Esse processo continua até que o nó destino seja atingido;
+\item Para que o caminho até o nó destino seja armazenado, é necessário um processo a parte \cite{yao2010path}.
+\end{itemize}
+
+Dessa maneira, é possível obter um caminho válido a partir de um grid com obstáculos, apenas possuindo um ponto de origem e um ponto de destino.
+
+\subsection{Execução de rota}
+Para permitir que o robô siga a rota, implementou-se um algoritmo "Go to Goal", que resumidamente, recebe uma coordenada qualquer, e auxilia o robô a chegar o mais perto possível de tal ponto.
+
+Considerando o modelo cinemático do Pioneer, para que ele siga determinada coordenada, é necessário que seu ângulo se alinhe ao ângulo da coordenada desejada. Desta maneira, conforme o robô se desloca, alinha-se ao objetivo definido, conseguindo assim se aproximar cada vez mais da coordenada desejada.
+
+Para realizarmos o alinhamento do ângulo do Pioneer com seu objetivo, utilizamos um controlador PID, acrônimo para "Proportional, Integral and Derivative", tais elementos descrevem os três elementos básicos de um controlador PID, exercendo funções específicas no sistema \cite{wescott2000pid}.
+
+O componente "Proportional" auxilia o sistema evitando que reaja exageradamente a pequenos estímulos; já o componente "Integral" auxilia adicionando uma precisão a longo prazo com os erros acumulados ao longo do tempo; por fim, o componente "Derivative" auxilia em respostas rápidas a erros que aumentam repentinamente, entretanto este componente pode ser zero se o erro for relativamente constante \cite{wescott2000pid}. Desta maneira, com o sinal de controle gerado pelo controlador PID, é possível ajustar a intensidade dos motores das rodas, alinhando o robô com o objetivo desejado.
+
+\subsection{Implementação}
+Com o algoritmo A* selecionado como melhor solução, ele foi primeiramente implementado em um módulo externo como prova de conceito. Em tal projeto, definiu-se além da implementação do algoritmo, a estrutura de persistência do grid e de outros detalhes relacionados ao planejamento de trajetórias.
+
+O módulo planejador demonstrou possuir performance aderente ao contexto abordado, necessitado de apenas 170ms em média para planejar uma rota em um grid de 50 colunas, 50 linhas e diversos obstáculos. Sua complexidade é O(E) onde "E" refere-se ao número de células no grid. Considerando que fizemos pouquíssimas otimizações e que nosso robô não exigia um tempo menor que esse, concluímos a implementação da PoC seria boa o suficiente para ser transferida ao projeto principal (veja a figura 7). Não utilizou-se diagonais no planejamento das rotas, a fim de facilitar comportamentos relacionados a eventuais colisões.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/path-planning-1.png}
+\caption{Prova de conceito do algoritmo A*}
+\label{fig:efk2}
+\end{figure}
+
+O próximo passo para integração foi traduzir o grid na cena do V-REP. Discretizou-se o cenário (conforme podemos ver na Figura 8) e criou-se um módulo que traduz as coordenadas das células para coordenadas no V-REP.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/path-planning-2.png}
+\caption{Cena discretizada em grid}
+\label{fig:efk2}
+\end{figure}
+
+Para seguir a trajetória definida, o robô basicamente recebe uma lista de coordenadas, representado o caminho a ser percorrido, e as desempilha nó a nó, até que o objetivo seja atingido. Dessa maneira, conseguimos permitir que o robô visitasse todas as plantas do cenário controlado proposto.
+
+A única especificidade adotada para atingir tal objetivo, refere-se a utilização de certas células alcunhadas de ?Padding?. Tais células são interpretadas pelo A-Star como obstáculos, porém demarcam regiões que não merecem ser visitadas, pois submeteriam o robô a uma condição de risco, como por exemplo, passar perto demais de determinada aqui. Com a lapidação do Go to Goal e de um grid mais preciso, este recurso certamente seria dispensável.
+
+
+\section{Q-Learning e Aprendizado}
+Ao iniciar o modelo deliberativo de comportamento, traçamos como meta inicial abordar o aprendizado para chaveamento entre os comportamentos "Wall Follower" e "Avoid Obstacle", representados no código pelas classes SimpleWallFollower e SimpleAvoidObstacle.
+
+Dessa maneira, iniciou-se o o processo de estudo que coordenaria os comportamentos de acordo com o algoritmo de aprendizado por reforço Q-Learning desenvolvido por Watkins \cite{watkins1989learning}, que segundo Watkins \cite{watkins1989learning}, capitulo 3, "Um processo de decisão Markov, ou cadeia controlada de Markov, cosiste em quatro partes: um estado-espaço S, uma função A que possibilita ações para cada estado, uma função de transição T e uma função de recompensa R.", assim, com base nesta técnica, utilizada para achar a ótima seleção de ações baseadas neste processo.
+Considerando a equação segundo Geramifard, Walsh, Tellex e Chowdhary \cite{geramifard2013tutorial}:
+
+\[ Q(st, at) <- Q(st, at) + \alpha t[rt+1+\lambda max Q(St+1, a) - Q(st, at)] \]
+
+Onde: Q(st, at) é o valor anterior, e $\alpha t$ é a taxa de aprendizado e como valor aprendido na expressão, $rt+1$ é a recompensa observada após executar a ação $at$, $\lambda$ é o fator de desconto e $max Q(St+1, a)$ é a estimativa de ação futura, descontando-se o valor anterior.
+
+Assim abordamos o modelo de aprendizado, mapeando os possíveis estados, como definido na figura 9. Onde 1 representara o estado inicial parado, 2 o comportamento de wall-follower, 3 o avoid-obstacle e 4 uma situação de risco.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=1\hsize]{images/pre-model.png}
+\caption{}
+\label{fig:efk2}
+\end{figure}
+O modelo não se mostrou efetivo para o comportamento esperado de exploração, era necessário mais que um estado ação de simples coordenação de comportamento, entretanto uma implementação para entender os passos do algoritmo encontra-se no projeto.
+Segundo o algoritmo de 
+O algoritmo traduzido para linguagem estruturada, seria segundo \cite{lima2009algoritmo}:
+\begin{itemize}
+\item Para cada ciclo do estado de treino
+\item Selecione um estado randomico inicial. 
+\item Enquanto (o estado final não chegar), faça:
+\begin{itemize}
+\item Selecione uma possivel ação, considerando o proximo estado.   
+\item Recupere o valor maximo de Q(recompensa) para o valor considerado proximo estado.   
+\item Compute valor da recompensa: Q(estado, ação) = Q(estado, ação) + alpha * (R(estado ,ação) + gamma * Max(proximo estado, todas ações) ? Q(estado, ação)).    
+\item Coloque o valor de estado no estado corrente.
+\end{itemize}
+\end{itemize}
+
+A matriz de recompensa a ações assim se fazia ineficiente para o resultado não mapeado que apresentamos como premissa pois, pois não recebia recompensas por exploração e sim por situações de risco e então alteraria para avoid-obstacle para ganhar recompensa exploratória e sempre continuava no mesmo estado, estando assim em um loop de estado ações pouco explorado, pois ao perceber uma situação de risco a única alternativa de recompensa seria alternar seu comportamento para evitar os obstáculos.
+As tentativas de implementação do algoritmo citado não foram finalizadas, considerando o modelo de recompensa de situação de risco e então começamos a pensar na integração das partes exploratórias de outros algoritmos e de um modelo futuro para exploração baseada no modelo de aprendizado e no algoritmo de Q-Learning. Este modelo deve criar um conjunto de ações com melhor recompensa definida por exploração de localização, como por exemplo, usar o mapeamento do ambiente e odometria para distinguir os objetos localizados e assim denominar o labirinto e escolhas a fazer.
+Iniciamos a integração dessa classe com o objetivo de modelar o ambiente do grid como conhecemos, usando a classe PathPlanner, podíamos gerar um grid genérico, para então efetuar os cálculos para descobrir uma maneira de coordenar os comportamentos. 
+Então iniciamos a modificação dos comportamentos para andar no grid de maneira coordenada, acima, abaixo, lateral esquerda, lateral direita, e verificar essas condições para validar se não havia obstáculos, que podem ser vista na classe QLearningBehavior, mas não foi finalizado a implementação e ficou como melhoria futura, baseada no conceito de mapeamento sensorial por objetivo e depois aplicar-se o aprendizado por reforço.
+Como demostração, o algoritmo futuro, tende-se a partir de criar landmarks randomicos de posições livres encontradas, e então após comportamentos de cordenação simples, como andar para frente, lateral esquerda, lateral direita, e reverso, poderiamos determinar a exploração do ambiente e assim encontrar os objetivos exploratórios mais definidos, conforme imagem:
+\includegraphics[width=1\hsize]{images/future-exploration-algoritm.png}
+
+
+
+
+\section{Conclusão}
+O filtro extendido de Kalman mostrou-se uma excelente maneira de realizar correções no calculo da odometria. A hipótese de estimar a pose do robô utilizando apenas uma base mostrou-se válida, porém exibe erros consideráveis que podem prejudicar os comportamentos do robô que dependem desta estimativa. Os experimentos deixaram claro que quanto mais \textit{landmarks} são acrescentados, mais precisa fica a estimativa da pose.
+
+O módulo de planejamento se mostrou bastante eficiente nesse cenário controlado. Entretanto, uma implementação com um grid com células ainda menores, com maior refinamento no momento de calcular o caminho, certamente garantiria que o robô pudesse acessar pontos específicos do cenário com maior precisão. O módulo de planejamentos poderia contar com outros comportamentos, ativados de acordo com faixas de coordenadas para garantir uma navegação mais dinâmica. Além disso, o Go to Goal também pode ser ainda mais refinado.
+
+A integração do processo de localização com o módulo de planejamento se deu através de serviços Python consumidos por um cliente Java. Dessa maneira conseguimos garantir bastante desacoplamento entre as implementações, utilizando o melhor de cada tecnologia durante o desenvolvimento desta prova de conceito..
+
+O processo de reforço por aprendizado necessita ser revisto e necessita de uma implementação mais ampla do que abordagem de simples coordenação de lógica fuzzy existente para situações de risco. Vimos que a necessidade de navegação e sistema de recompensa pode ser utilizado determinando um grid de objetivo, nesse grid, que pode ser mapeado por pequenos intervalos de tempos, o robô pode explorar pequenos objetivos simples, até conseguir completar a matriz do ambiente com demarcações de landmarks e riscos. Após esse processo o robô pode se basear na matriz de escolhas das melhores ações de recompensa pelo processo de aprendizado por reforço.
+
+
+
+
+
+%******************************************************************************
+% Referências - Definidas no arquivo Relatorio.bib
+
+\bibliographystyle{IEEEtran}
+
+\bibliography{Relatorio}
+
+
+%******************************************************************************
+
+
+
+\end{document}

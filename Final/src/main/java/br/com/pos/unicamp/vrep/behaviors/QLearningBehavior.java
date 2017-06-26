@@ -1,8 +1,5 @@
 package br.com.pos.unicamp.vrep.behaviors;
 
-import java.util.ArrayList;
-import java.util.Random;
-
 import br.com.pos.unicamp.vrep.behaviors.pathfinding.Grid;
 import br.com.pos.unicamp.vrep.behaviors.pathfinding.Node;
 import br.com.pos.unicamp.vrep.behaviors.pathfinding.Position;
@@ -10,7 +7,7 @@ import br.com.pos.unicamp.vrep.common.Coordinate;
 import br.com.pos.unicamp.vrep.common.Pose;
 import br.com.pos.unicamp.vrep.robots.Pioneer;
 
-public class QLearningBeahiavor implements Behavior {
+public class QLearningBehavior implements Behavior {
 
 	private Coordinate destination;
 
