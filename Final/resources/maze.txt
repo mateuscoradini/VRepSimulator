@@ -1,0 +1,7 @@
+0 0 0 X X X X X
+0 0 0 0 0 0 0 X
+0 0 0 0 0 0 F X
+0 0 0 0 0 X X X
+X X X 0 0 X 0 X
+0 0 0 0 0 0 0 X
+X X F X X X X X

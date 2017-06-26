@@ -1,0 +1,77 @@
+Q-Learning - Aprendizado
+
+Ao iniciar o modelo deliberativo de comportamento, traçamos como meta inicial abordar o aprendizado de mudança de comportamento que haviamos implementado anteriormente, como "Wall Follower" e "Avoid Obstacle", classes SimpleWallFollower e SimpleAvoidObstacle.
+Assim iniciamos o projeto que alternaria os comportamentos fuzzys anteriormente implementados, de acordo com o algoritmo de aprendizado por reforço Q-Learning desenvolvido por Watkins (1), que segundo Watkins (1), capitulo 3, "Um processo de decisão Markov, ou cadeia controlada de Markov, cosiste em quatro partes: um estado-espaço S, uma função A que possibilita ações para cada estado, uma função de transição T e uma função de recompensa R.", assim baseamos nesta tecnica usada para achar a ótima seleção de ações baseadas neste processo.
+Considerando a equação segundo Geramifard(2), Walsh(2), Tellex(2) e Chowdhary(2) :
+
+Q(st, at) <- Q(st, at) + ɑt[rt+1+ƛmax Q(St+1, a) - Q(st, at)]
+
+Onde:
+Q(st, at) é o valor anterior, e ɑt é a taxa de aprendizado e como valor aprendido na expresão, rt+1 é a recompensa observada após executar a ação at, ƛ é o fator de desconto e max Q(St+1, a) é a estimativa de ação futura, descontando-se o valor anterior.
+
+Assim começamos a realizar o modelo de aprendizado, mapeando os possiveis estados como definido na figura abaixo.
+Onde 1 era o estado inicial parado, 2 era o comportamento de wall-follower, 3 era avoid-obstacle e 4 situação de risco.
+imagem: resources/coradini-sources/pre-model.png
+
+O modelo não se mostrou efetivo para o comportamento esperado de exploração, era necessário mais que um estado ação de simples coordenação de comportamento, mas mesmo assim iniciei uma implementação para entender os passos do algoritmo.
+Segundo o algoritmo de 
+O algoritmo traduzido para linguagem estruturada, seria segundo (4) :
+Para cada ciclo do estado de treino:
+ Selecione um estado randomico inicial. 
+ Enquanto(o estado final não chegar)
+	Faça:	  
+	  Selecione uma possivel ação, considerando o proximo estado.	  
+	  Recupere o valor maximo de Q(recompensa) para o valor considerado proximo estado.	  
+	  Compute valor da recompensa: Q(estado, ação) = Q(estado, ação) + alpha * (R(estado ,ação) + gamma * Max(proximo estado, todas ações) – Q(estado, ação)).	  
+	  Coloque o valor de estado no estado corrente.
+	Fim Faça.
+  Fim Enquanto.
+Fim Para cada.
+
+
+
+A matriz de recompensa a ações assim se fazia ineficiente para o resultado não mapeado que apresentamos como premissa pois, pois nao recebia recompensas por exploração e sim por situações de risco e então alteraria para avoid-obstacle para ganhar recompensa exploratória e sempre continuava no mesmo estado, estando assim em um loop de estado ações pouco explorado, pois ao perceber uma situação de risco a unica alternativa de recompensa seria alternar seu comportamento para evitar os obstaculos.
+Testes com 500 iterações, num mapa de 3 colunas por 3 linhas, para exemplificar o goal, podem ser vistas na classe QLearningTheory :
+Print result
+out from Stopped:  0 0 0 0 
+out from WallFollowing:  0 0 -1 0 
+out from Danger:  0 0 0 0 
+out from AvoidObstacle:  0 1 0 0,9 
+showPolicy
+from Stopped goto Stopped
+from WallFollowing goto WallFollowing
+from Danger goto Danger
+from AvoidObstacle goto WallFollowing
+Time: 0.029 sec.
+
+Falhei em algumas tentativas de implementação do algortimo citado, com o modelo de recompensa de situação de risco e então começamos a pensar na integração das partes exploratórias de outros algoritmos e de um modelo futuro para exploção baseada no modelo de aprendizado e no algoritmo de Q-Learning. Este modelo deve criar um conjunto de ações com melhor recompensa definida por exploração de localização, como por exemplo, usar o mapeamento do ambiente e odometria para distinguir os objetos localizados e assim demoninar o labirinto e escolhas a fazer.
+Iniciei a integração dessa classe com o objetivo de modelar o ambiente do grid como conhecemos, usando a classe PathPlanner, podiamos gerar um grid genérico, para então efetuar os calculos para descobrir uma maneira de coordenar os comportamentos.
+Então iniciamos a modificação dos comportamentos para andar no grid de maneira cordenada, acima, abaixo, lateral esquerda, lateral direita, e verificar essas condições para validar se não havia obstaculos, que podem ser vista na classe QLearningBeahiavor, mas não foi finalizado a implementação e ficou como melhoria futura.
+
+
+
+Integração - Modelo Exploratório A-Star, Filtro de Kalman
+
+Ao concluir as implementações das partes de exploração A-Star e o filtro de Kalman, necessitavamos de realizar a integração das implementações para compor os comportamentos de objetivo a visitar cada planta no ambiente.
+Ao planejar a rotatória do modelo, é necessário enviar a coordenada para as classes de planejamento, e assim obter a melhor rota de acordo com o algoritmo de planejamento de rotas implementado, A-star, que atualiza o estado do planejamento baseado na andamento da coordenada mapeada, integrando assim o filtro de Kalman.
+Essa integração foi demonstrada como serviço combinatório de dois clientes desenvolvidos em linguagens diferentes como, java e ruby. Ao obter a comunicação entre os clientes e o servidor, podemos atualizar as informações de coordenadas de localização do robô, dispensando o uso do groundthruth, e utilizando o filtro de Kalman no algoritmo de planejamento A-star.
+
+
+
+
+Ref:
+
+(1) Watkins, C. J. C. H. (1989), Learning from delayed rewards, PhD thesis, http://www.cs.rhul.ac.uk/~chrisw/new_thesis.pdf, acessado em 19/06/2017.
+
+(2) Foundations and Trends R in Machine Learning, Vol. 6, No. 4 (2013) 375–454, c 2013 A. Geramifard, T. J. Walsh, S. Tellex, G. Chowdhary,A Tutorial on Linear Function Approximators for Dynamic Programming and Reinforcement Learning, http://people.csail.mit.edu/agf/Files/13FTML-RLTutorial.pdf, Pag.381 a 383, acessado em 19/06/2017.
+
+(3) Sutton, R. S. Temporal Credit Assignment in Reinforcement Learning. PhD Thesis - University of Massachusetts, The MIT Press, 1984.
+
+(4) Algoritmo Q-Leaning como Estratégia de Exploração e/ou Explotação para Metaheurísticas GRASP e Algoritmo Genético, Francisco Chagas de Limas Júnior, Universidade Federal do Rio Grande do Norte, Natal, Rio Grande do Norte, 11 de Maio de 2009 https://repositorio.ufrn.br/jspui/bitstream/123456789/15129/1/FranciscoCLJ.pdf, pag. 25, Algoritmo de
+
+
+ 
+
+
+
+
