@@ -55,7 +55,7 @@
 % Resumo do trabalho
 \begin{abstract}
 O objetivo deste trabalho é implementar um sistema de localização e planejamento de rotas para um robô móvel. Para localização, utilizou-se o filtro Kalman extendido, combinando a estimativa provida pela odometria com a observação da localização de uma base. Para o planejamento e execução de rotas, utilizou-se o algoritmo A* combinado com o comportamento "Go to Goal". Também discutem-se possíveis melhorias para a implementação desenvolvida, utilizando técnicas de aprendizado por reforço.
-O filtro de Kalman provou-se uma técnica eficiente para computar a localização do robô, especialmente quando mais de uma base é utilizada fusão sensorial. As técnicas utilizadas para implementação do módulo de planejamento de caminhos também atingiram êxito.
+O filtro de Kalman provou-se uma técnica eficiente para computar a localização do robô, especialmente quando mais de uma base é utilizada. As técnicas utilizadas para implementação do módulo de planejamento de caminhos também atingiram êxito.
 
 \end{abstract}
 
@@ -209,7 +209,7 @@ O objetivo da utilização do filtro é a melhoria na cálculo da pose do robô.  Por
 A primeira linha do algoritmo pode ser entendida como o modelo de erro da odometria. Portanto, foi acrescentado mais um fator em sua composição. Sua forma final é dada pela equação:
 \[\bar{\Sigma}_{t} = G_t\Sigma_{t-1}G_t^T + V_t \Sigma_{\Delta t} V_t^T + R_t \]
 
-Os valores de \(G_t\), \(Sigma_{\Delta t}\), \(V_t\) e \(R_t\) estão descritos abaixo:
+Os valores de \(G_t\), \(\Sigma_{\Delta t}\), \(V_t\) e \(R_t\) estão descritos abaixo:
 
 \[\beta_t = \theta_{t-1} + \frac{\Delta \theta_t}{2} \]
 \[ G_t = 
@@ -271,7 +271,7 @@ H_t = \left[
 \right]
 \]
 
-A terceira linha do algoritmo realiza o cálculo de \(\mu_t\). A equação \(z_t - \hat{z}_t\) calcula um valor chamado de \textit{inovação} ou resíduo. Em termos práticos ele apenas estima a diferença entre onde o \textit{landmark} deveria estar e onde ele está. A formulação utilizada na implementação realiza na verdade a diferença inversa \(\hat{z}_t - z_t\) e matriz \(H_t\) foi apresentada de acordo com essa mudança. Para cada \textit{landmark} utilizado duas linhas são acrescentadas as matrizes:
+A terceira linha do algoritmo realiza o cálculo de \(\mu_t\). A equação \(z_t - \hat{z}_t\) calcula um valor chamado de \textit{inovação} ou resíduo. Em termos práticos ela apenas estima a diferença entre onde o \textit{landmark} deveria estar e onde ele está. A formulação utilizada na implementação realiza na verdade a diferença inversa \(\hat{z}_t - z_t\) e matriz \(H_t\) foi apresentada de acordo com essa mudança. Para cada \textit{landmark} utilizado duas linhas são acrescentadas as matrizes:
 \[z = \left[ 
 \begin{array}{c}
 L_{range} \\
@@ -396,7 +396,7 @@ A base do A* é sua função de avaliação de nó, que calcula a relevância de cada n
 
 \[ f(n) = g(n) + h(n) \]
 
-O elemento "g(n)" representa o custo da locomoção do robô entre nó avaliado e o nó de origem. Enquanto o "h(n)" representa o custo de locomoção do nó avaliado até o nó de destino, repare que apesar de tal valor ser alcançável, uma heurística como Manhattan, distância Euclideana, ou ainda Chebyshev, apresenta-se muito mais eficiente e barata \cite{duchovn2014path}.
+O elemento "g(n)" representa o custo da locomoção do robô entre nó avaliado e o nó de origem, enquanto o "h(n)" representa o custo de locomoção do nó avaliado até o nó de destino. Repare que apesar de tal valor ser alcançável, uma heurística como Manhattan, distância Euclideana, ou ainda Chebyshev, apresenta-se muito mais eficiente e barata \cite{duchovn2014path}.
 
 De modo genérico, podemos dizer que o comportamento do A* funciona basicamente da seguinte maneira:
 \begin{itemize}
@@ -413,57 +413,58 @@ Para permitir que o robô siga a rota, implementou-se um algoritmo "Go to Goal", 
 
 Considerando o modelo cinemático do Pioneer, para que ele siga determinada coordenada, é necessário que seu ângulo se alinhe ao ângulo da coordenada desejada. Desta maneira, conforme o robô se desloca, alinha-se ao objetivo definido, conseguindo assim se aproximar cada vez mais da coordenada desejada.
 
-Para realizarmos o alinhamento do ângulo do Pioneer com seu objetivo, utilizamos um controlador PID, acrônimo para "Proportional, Integral and Derivative", tais elementos descrevem os três elementos básicos de um controlador PID, exercendo funções específicas no sistema \cite{wescott2000pid}.
+Para realizarmos o alinhamento do ângulo do Pioneer com seu objetivo, utilizamos um controlador PID, acrônimo para "Proportional, Integral and Derivative". O elementos que compõe a sigla descrevem os três elementos básicos de um controlador PID, que exercem funções específicas no sistema \cite{wescott2000pid}.
 
-O componente "Proportional" auxilia o sistema evitando que reaja exageradamente a pequenos estímulos; já o componente "Integral" auxilia adicionando uma precisão a longo prazo com os erros acumulados ao longo do tempo; por fim, o componente "Derivative" auxilia em respostas rápidas a erros que aumentam repentinamente, entretanto este componente pode ser zero se o erro for relativamente constante \cite{wescott2000pid}. Desta maneira, com o sinal de controle gerado pelo controlador PID, é possível ajustar a intensidade dos motores das rodas, alinhando o robô com o objetivo desejado.
+O componente "Proportional" auxilia o sistema evitando que reaja exageradamente a pequenos estímulos; já o componente "Integral" auxilia adicionando uma precisão a longo prazo com os erros acumulados ao longo do tempo; por fim, o componente "Derivative" auxilia em respostas rápidas a erros que aumentam repentinamente. Entretanto, se o erro for relativamente constante, este último componente pode ser zero \cite{wescott2000pid}. Desta maneira, com o sinal de controle gerado pelo controlador PID, é possível ajustar a intensidade dos motores das rodas, alinhando o robô com o objetivo desejado.
 
 \subsection{Implementação}
 Com o algoritmo A* selecionado como melhor solução, ele foi primeiramente implementado em um módulo externo como prova de conceito. Em tal projeto, definiu-se além da implementação do algoritmo, a estrutura de persistência do grid e de outros detalhes relacionados ao planejamento de trajetórias.
 
-O módulo planejador demonstrou possuir performance aderente ao contexto abordado, necessitado de apenas 170ms em média para planejar uma rota em um grid de 50 colunas, 50 linhas e diversos obstáculos. Sua complexidade é O(E) onde "E" refere-se ao número de células no grid. Considerando que fizemos pouquíssimas otimizações e que nosso robô não exigia um tempo menor que esse, concluímos a implementação da PoC seria boa o suficiente para ser transferida ao projeto principal (veja a figura 7). Não utilizou-se diagonais no planejamento das rotas, a fim de facilitar comportamentos relacionados a eventuais colisões.
+O módulo planejador demonstrou possuir performance adequada ao contexto abordado, necessitado de apenas 170ms em média para planejar uma rota em um grid de 50 colunas, 50 linhas e diversos obstáculos. Sua complexidade é O(E) onde "E" refere-se ao número de células no grid. Considerando que fizemos pouquíssimas otimizações e que nosso robô não exigia um tempo menor que esse, concluímos a implementação da PoC seria boa o suficiente para ser transferida ao projeto principal (veja a figura \ref{fig:poc-a-star}). Não utilizou-se diagonais no planejamento das rotas, a fim de facilitar comportamentos relacionados a eventuais colisões.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=1\hsize]{images/path-planning-1.png}
 \caption{Prova de conceito do algoritmo A*}
-\label{fig:efk2}
+\label{fig:poc-a-star}
 \end{figure}
 
-O próximo passo para integração foi traduzir o grid na cena do V-REP. Discretizou-se o cenário (conforme podemos ver na Figura 8) e criou-se um módulo que traduz as coordenadas das células para coordenadas no V-REP.
+O próximo passo para integração foi traduzir o grid na cena do V-REP. Discretizou-se o cenário (conforme podemos ver na figura \ref{fig:grid}) e criou-se um módulo que traduz as coordenadas das células para coordenadas no V-REP.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=1\hsize]{images/path-planning-2.png}
 \caption{Cena discretizada em grid}
-\label{fig:efk2}
+\label{fig:grid}
 \end{figure}
 
-Para seguir a trajetória definida, o robô basicamente recebe uma lista de coordenadas, representado o caminho a ser percorrido, e as desempilha nó a nó, até que o objetivo seja atingido. Dessa maneira, conseguimos permitir que o robô visitasse todas as plantas do cenário controlado proposto.
+Para seguir a trajetória definida, o robô basicamente recebe uma lista de coordenadas, representado o caminho a ser percorrido, e a desempilha nó a nó, até que o objetivo seja atingido. Dessa maneira, o robô consegue realizar a tarefa de visitar todas as plantas do cenário proposto.
 
-A única especificidade adotada para atingir tal objetivo, refere-se a utilização de certas células alcunhadas de ?Padding?. Tais células são interpretadas pelo A-Star como obstáculos, porém demarcam regiões que não merecem ser visitadas, pois submeteriam o robô a uma condição de risco, como por exemplo, passar perto demais de determinada aqui. Com a lapidação do Go to Goal e de um grid mais preciso, este recurso certamente seria dispensável.
+A única especificidade adotada para atingir tal objetivo, refere-se a utilização de certas células alcunhadas de \textit{padding}. Tais células são interpretadas pelo A-Star como obstáculos, porém na realidade demarcam regiões que não devem ser visitadas, pois submeteriam o robô a uma condição de risco, como por exemplo, passar perto demais de determinada quina. Com a lapidação do Go to Goal e de um grid mais preciso, este recurso certamente seria dispensável.
 
 
 \section{Q-Learning e Aprendizado}
 Ao iniciar o modelo deliberativo de comportamento, traçamos como meta inicial abordar o aprendizado para chaveamento entre os comportamentos "Wall Follower" e "Avoid Obstacle", representados no código pelas classes SimpleWallFollower e SimpleAvoidObstacle.
 
-Dessa maneira, iniciou-se o o processo de estudo que coordenaria os comportamentos de acordo com o algoritmo de aprendizado por reforço Q-Learning desenvolvido por Watkins \cite{watkins1989learning}, que segundo Watkins \cite{watkins1989learning}, capitulo 3, "Um processo de decisão Markov, ou cadeia controlada de Markov, cosiste em quatro partes: um estado-espaço S, uma função A que possibilita ações para cada estado, uma função de transição T e uma função de recompensa R.", assim, com base nesta técnica, utilizada para achar a ótima seleção de ações baseadas neste processo.
+Dessa maneira, iniciou-se o o processo de estudo que coordenaria os comportamentos de acordo com o algoritmo de aprendizado por reforço Q-Learning desenvolvido por Watkins \cite{watkins1989learning}. Esta técnica é definida pelo próprio autor como "um processo de decisão Markov, ou cadeia controlada de Markov, que consiste em quatro partes: um estado-espaço S, uma função A que possibilita ações para cada estado, uma função de transição T e uma função de recompensa R.". 
+
 Considerando a equação segundo Geramifard, Walsh, Tellex e Chowdhary \cite{geramifard2013tutorial}:
 
 \[ Q(st, at) <- Q(st, at) + \alpha t[rt+1+\lambda max Q(St+1, a) - Q(st, at)] \]
 
-Onde: Q(st, at) é o valor anterior, e $\alpha t$ é a taxa de aprendizado e como valor aprendido na expressão, $rt+1$ é a recompensa observada após executar a ação $at$, $\lambda$ é o fator de desconto e $max Q(St+1, a)$ é a estimativa de ação futura, descontando-se o valor anterior.
+Onde: \(Q(st, at)\) é o valor anterior, e $\alpha t$ é a taxa de aprendizado e como valor aprendido na expressão, $rt+1$ é a recompensa observada após executar a ação $at$, $\lambda$ é o fator de desconto e $max Q(St+1, a)$ é a estimativa de ação futura, descontando-se o valor anterior.
 
-Assim abordamos o modelo de aprendizado, mapeando os possíveis estados, como definido na figura 9. Onde 1 representara o estado inicial parado, 2 o comportamento de wall-follower, 3 o avoid-obstacle e 4 uma situação de risco.
+Assim abordamos o modelo de aprendizado, mapeando os possíveis estados, como definido na figura \ref{fig:q-learning}. Onde 1 representara o estado inicial parado, 2 o comportamento de wall-follower, 3 o avoid-obstacle e 4 uma situação de risco.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=1\hsize]{images/pre-model.png}
 \caption{}
-\label{fig:efk2}
+\label{fig:q-learning}
 \end{figure}
-O modelo não se mostrou efetivo para o comportamento esperado de exploração, era necessário mais que um estado ação de simples coordenação de comportamento, entretanto uma implementação para entender os passos do algoritmo encontra-se no projeto.
-Segundo o algoritmo de 
-O algoritmo traduzido para linguagem estruturada, seria segundo \cite{lima2009algoritmo}:
+O modelo não se mostrou efetivo para o comportamento esperado de exploração. Verificou-se que era necessário mais que um estado ação de simples coordenação de comportamento. Entretanto uma implementação para entender os passos do algoritmo encontra-se no projeto.
+
+O algoritmo traduzido para linguagem estruturada, seria segundo Lima Júnior \cite{lima2009algoritmo}:
 \begin{itemize}
 \item Para cada ciclo do estado de treino
 \item Selecione um estado randomico inicial. 
@@ -476,12 +477,21 @@ O algoritmo traduzido para linguagem estruturada, seria segundo \cite{lima2009al
 \end{itemize}
 \end{itemize}
 
-A matriz de recompensa a ações assim se fazia ineficiente para o resultado não mapeado que apresentamos como premissa pois, pois não recebia recompensas por exploração e sim por situações de risco e então alteraria para avoid-obstacle para ganhar recompensa exploratória e sempre continuava no mesmo estado, estando assim em um loop de estado ações pouco explorado, pois ao perceber uma situação de risco a única alternativa de recompensa seria alternar seu comportamento para evitar os obstáculos.
+A matriz de recompensa a ações assim se fazia ineficiente para o resultado não mapeado que apresentamos como premissa , pois não recebia recompensas por exploração e sim por situações de risco e então alteraria para avoid-obstacle para ganhar recompensa exploratória e sempre continuava no mesmo estado, estando assim em um loop de estado ações pouco explorado.
+
 As tentativas de implementação do algoritmo citado não foram finalizadas, considerando o modelo de recompensa de situação de risco e então começamos a pensar na integração das partes exploratórias de outros algoritmos e de um modelo futuro para exploração baseada no modelo de aprendizado e no algoritmo de Q-Learning. Este modelo deve criar um conjunto de ações com melhor recompensa definida por exploração de localização, como por exemplo, usar o mapeamento do ambiente e odometria para distinguir os objetos localizados e assim denominar o labirinto e escolhas a fazer.
-Iniciamos a integração dessa classe com o objetivo de modelar o ambiente do grid como conhecemos, usando a classe PathPlanner, podíamos gerar um grid genérico, para então efetuar os cálculos para descobrir uma maneira de coordenar os comportamentos. 
+Iniciamos a integração dessa classe com o objetivo de modelar o ambiente do grid como conhecemos, usando a classe PathPlanner, pois podíamos gerar um grid genérico, para então efetuar os cálculos para descobrir uma maneira de coordenar os comportamentos. 
 Então iniciamos a modificação dos comportamentos para andar no grid de maneira coordenada, acima, abaixo, lateral esquerda, lateral direita, e verificar essas condições para validar se não havia obstáculos, que podem ser vista na classe QLearningBehavior, mas não foi finalizado a implementação e ficou como melhoria futura, baseada no conceito de mapeamento sensorial por objetivo e depois aplicar-se o aprendizado por reforço.
-Como demostração, o algoritmo futuro, tende-se a partir de criar landmarks randomicos de posições livres encontradas, e então após comportamentos de cordenação simples, como andar para frente, lateral esquerda, lateral direita, e reverso, poderiamos determinar a exploração do ambiente e assim encontrar os objetivos exploratórios mais definidos, conforme imagem:
+Como demostração, o algoritmo futuro, tende-se a partir de criar landmarks randomicos de posições livres encontradas, e então após comportamentos de cordenação simples, como andar para frente, lateral esquerda, lateral direita, e reverso, poderiamos determinar a exploração do ambiente e assim encontrar os objetivos exploratórios mais definidos, conforme imagem \ref{fig:grid2}.
+
+\begin{figure}[ht]
+\centering
 \includegraphics[width=1\hsize]{images/future-exploration-algoritm.png}
+\caption{Cena discretizada em grid}
+\label{fig:grid2}
+\end{figure}
+
+
 
 
 
