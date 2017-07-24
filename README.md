@@ -1,6 +1,11 @@
 # Simulator
 The third project for the [MO810](http://www.ic.unicamp.br/~esther/teaching/2017s1/mc959/index.html) class.
 
+#Members:
+* Mateus Coradini Santos - @[mateuscoradini](https://github.com/mateuscoradini)
+* Luísa Cardoso Madeira - @[luwood](https://github.com/luwood)
+* Guilherme Carreiro - @[karreiro] (https://github.com/karreiro)
+
 ## Summary
 This project implements a robot that searches for plants.
 
